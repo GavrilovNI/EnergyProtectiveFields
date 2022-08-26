@@ -1,6 +1,6 @@
 package me.doggy.energyprotectivefields.item;
 
-import me.doggy.energyprotectivefields.IFieldShape;
+import me.doggy.energyprotectivefields.api.IFieldShape;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 
@@ -17,21 +17,27 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
     }
     
     @Override
-    public Set<BlockPos> getShieldPoses(BlockPos center, int sizeUpgrade)
+    public Set<BlockPos> getShieldPoses(BlockPos center, int sizeUpgrade, int strengthUpgrade)
     {
+        if(sizeUpgrade < 0)
+            throw new IllegalArgumentException("sizeUpgrade must not be negative");
+        if(strengthUpgrade < 0)
+            throw new IllegalArgumentException("strengthUpgrade must not be negative");
+        
         Set<BlockPos> result = new HashSet<>();
     
-        int radius = MIN_RADIUS + sizeUpgrade;
+        int smallRadius = MIN_RADIUS + sizeUpgrade - 1;
+        int bigRadius = MIN_RADIUS + sizeUpgrade + strengthUpgrade;
         
-        for(int x = 0; x <= radius; ++x)
+        for(int x = 0; x <= bigRadius; ++x)
         {
-            for(int y = 0; y <= radius; ++y)
+            for(int y = 0; y <= bigRadius; ++y)
             {
-                for(int z = 0; z <= radius; ++z)
+                for(int z = 0; z <= bigRadius; ++z)
                 {
                     int dist = (int) Math.round(Math.sqrt(x * x + y * y + z * z));
                     
-                    if(dist > radius - 1 && dist <= radius)
+                    if(dist > smallRadius && dist <= bigRadius)
                     {
                         result.add(center.offset(x, y, z));
                         result.add(center.offset(x, y, -z));

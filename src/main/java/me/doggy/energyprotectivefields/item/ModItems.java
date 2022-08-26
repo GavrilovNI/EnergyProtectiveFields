@@ -1,6 +1,7 @@
 package me.doggy.energyprotectivefields.item;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
+import me.doggy.energyprotectivefields.ModCreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -19,8 +20,16 @@ public class ModItems
             new FieldShapeSphereItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
+    public static final RegistryObject<Item> STRENGTH_UPGRADE = ITEMS.register("strength_upgrade", () ->
+            new StrengthUpgradeItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
     public static final RegistryObject<Item> SIZE_UPGRADE = ITEMS.register("size_upgrade", () ->
             new SizeUpgradeItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    public static final RegistryObject<Item> CARD_LINK = ITEMS.register("card_link", () ->
+            new CardLinkItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

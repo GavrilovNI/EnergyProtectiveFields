@@ -13,9 +13,18 @@ public class ModBlockEntities
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(ForgeRegistries.BLOCK_ENTITIES,
             EnergyProtectiveFields.MOD_ID);
     
-    public static final RegistryObject<BlockEntityType<FieldControllerBlockEntity>> FIELD_CONTROLLER_BLOCK_ENTITY =
-            BLOCK_ENTITIES.register("field_controller_block_entity", () -> BlockEntityType.Builder.of(FieldControllerBlockEntity::new,
+    
+    public static final RegistryObject<BlockEntityType<FieldBlockEntity>> FIELD_BLOCK =
+            BLOCK_ENTITIES.register("field_block", () -> BlockEntityType.Builder.of(FieldBlockEntity::new,
+                    ModBlocks.FIELD_BLOCK.get()).build(null));
+    
+    public static final RegistryObject<BlockEntityType<FieldControllerBlockEntity>> FIELD_CONTROLLER =
+            BLOCK_ENTITIES.register("field_controller", () -> BlockEntityType.Builder.of(FieldControllerBlockEntity::new,
             ModBlocks.FIELD_CONTROLLER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<InfinityEnergyGeneratorBlockEntity>> INFINITY_ENERGY_GENERATOR =
+            BLOCK_ENTITIES.register("infinity_energy_generator", () -> BlockEntityType.Builder.of(InfinityEnergyGeneratorBlockEntity::new,
+                    ModBlocks.INFINITY_ENERGY_GENERATOR.get()).build(null));
     
     public static void register(IEventBus eventBus)
     {

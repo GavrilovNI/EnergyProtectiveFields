@@ -1,4 +1,4 @@
-package me.doggy.energyprotectivefields.item;
+package me.doggy.energyprotectivefields;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.block.ModBlocks;

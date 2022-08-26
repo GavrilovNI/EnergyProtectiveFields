@@ -1,7 +1,7 @@
 package me.doggy.energyprotectivefields.block;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
-import me.doggy.energyprotectivefields.item.ModCreativeModeTab;
+import me.doggy.energyprotectivefields.ModCreativeModeTab;
 import me.doggy.energyprotectivefields.item.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.EntityType;
@@ -40,6 +40,11 @@ public class ModBlocks
     
     public static final RegistryObject<Block> FIELD_CONTROLLER = registerBlockWithItem("field_controller",
             () -> new FieldControllerBlock(BlockBehaviour.Properties.of(Material.STONE)),
+            ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
+    );
+    
+    public static final RegistryObject<Block> INFINITY_ENERGY_GENERATOR = registerBlockWithItem("infinity_energy_generator",
+            () -> new InfinityEnergyGeneratorBlock(BlockBehaviour.Properties.of(Material.STONE)),
             ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
     );
     
