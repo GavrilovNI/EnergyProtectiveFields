@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.screen;
 
+import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import me.doggy.energyprotectivefields.screen.slot.SlotItemHandlerWithNotifier;
@@ -24,13 +25,9 @@ public class FieldControllerMenu extends AbstractContainerWithEnergyMenu
     
     public FieldControllerMenu(int pContainerId, Inventory inventory, BlockEntity blockEntity)
     {
-        super(ModMenuTypes.FIELD_CONTROLLER_MENU.get(), pContainerId, inventory.player, blockEntity);
-        checkContainerSize(inventory, 2);
+        super(ModMenuTypes.FIELD_CONTROLLER_MENU.get(), pContainerId, inventory, new Vec2i(8, 92), blockEntity);
         this.blockEntity = (FieldControllerBlockEntity) blockEntity;
         this.level = inventory.player.level;
-    
-        addPlayerHotbar(inventory, 8, 150);
-        addPlayerInventory(inventory, 8, 92);
         
         this.blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(itemHandler -> {
             int i = 0;

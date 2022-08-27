@@ -1,9 +1,11 @@
 package me.doggy.energyprotectivefields.screen;
 
+import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.networking.NetworkManager;
 import me.doggy.energyprotectivefields.networking.packet.UpdateEnergyCapabilityInBlockEntityS2CPacket;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -18,10 +20,17 @@ public abstract class AbstractContainerWithEnergyMenu extends BaseItemInventoryM
     private final BlockEntity blockEntity;
     private IEnergyStorage sentStorage = null;
     
-    protected AbstractContainerWithEnergyMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Player player, BlockEntity blockEntity)
+    protected AbstractContainerWithEnergyMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory inventory, Vec2i playerInventoryStart, Vec2i playerHotBarStart, BlockEntity blockEntity)
     {
-        super(pMenuType, pContainerId);
-        this.player = player;
+        super(pMenuType, pContainerId, inventory, playerInventoryStart, playerHotBarStart);
+        this.player = inventory.player;
+        this.blockEntity = blockEntity;
+    }
+    
+    protected AbstractContainerWithEnergyMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory inventory, Vec2i playerInventoryStart, BlockEntity blockEntity)
+    {
+        super(pMenuType, pContainerId, inventory, playerInventoryStart);
+        this.player = inventory.player;
         this.blockEntity = blockEntity;
     }
     

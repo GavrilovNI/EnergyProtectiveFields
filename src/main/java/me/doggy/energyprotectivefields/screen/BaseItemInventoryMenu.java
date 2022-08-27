@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.screen;
 
+import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -10,9 +11,18 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class BaseItemInventoryMenu extends AbstractContainerMenu
 {
-    protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId)
+    protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory inventory, Vec2i playerInventoryStart, Vec2i playerHotBarStart)
     {
         super(pMenuType, pContainerId);
+        checkContainerSize(inventory, 36);
+    
+        addPlayerHotbar(inventory, playerHotBarStart.getX(), playerHotBarStart.getY());
+        addPlayerInventory(inventory, playerInventoryStart.getX(), playerInventoryStart.getY());
+    }
+    
+    protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory playerInventory, Vec2i playerInventoryStart)
+    {
+        this(pMenuType, pContainerId, playerInventory, playerInventoryStart, playerInventoryStart.above(58));
     }
     
     private static final int HOTBAR_SLOT_COUNT = 9;

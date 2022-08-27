@@ -1,7 +1,9 @@
 package me.doggy.energyprotectivefields.block.entity;
 
+import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.utils.ArrayListSet;
 import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
@@ -21,6 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -46,12 +49,13 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
     
     public static final int MAX_ENERGY_CAPACITY = 50000;
-    public static final int MAX_ENERGY_RECEIVE = 5000;
+    public static final int MAX_ENERGY_RECEIVE = 10000;
     
     public static final int ENERGY_TO_BUILD = 20;
     public static final int ENERGY_TO_SUPPORT = 4;
     
     private UUID uuid;
+    private final Random random;
     
     private final ItemStackHandler itemStackHandler = new ItemStackHandler(ITEM_CAPABILITY_SIZE)
     {
@@ -60,7 +64,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         {
             setChanged();
             if(level.isClientSide() == false)
-                onInventoryContentChanged(slot);
+                updateShape();
         }
     
         @Override
@@ -103,23 +107,23 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     };
     
     private LazyOptional<BetterEnergyStorage> lazyEnergyStorage = LazyOptional.empty();
-    
     private LazyOptional<IItemHandler> lazyItemHandler = LazyOptional.empty();
     
     private final Set<IFieldProjector> fieldProjectors = new HashSet<>();
     
     private Set<BlockPos> shapePositions = new HashSet<>();
-    
     private final HashSet<BlockPos> createdFields = new HashSet<>();
-    private final HashSet<BlockPos> notCreatedFields = new HashSet<>();
-    
+    //private final HashSet<BlockPos> notCreatedFields = new HashSet<>();
     private final HashSet<BlockPos> fieldsToRemove = new HashSet<>();
+    
+    private final ArrayListSet<BlockPos> notCreatedFields = new ArrayListSet<>();
     
     public FieldControllerBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
         super(ModBlockEntities.FIELD_CONTROLLER.get(), pWorldPosition, pBlockState);
         uuid = UUID.randomUUID();
         fieldProjectors.add(this);
+        random = new Random();
     }
     
     @Override
@@ -133,28 +137,12 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         return getBlockState().getValue(FieldControllerBlock.ENABLED);
     }
     
-    private void onInventoryContentChanged(int slot)
-    {
-        updateShape();
-    }
-    
     public void onDestroyed()
     {
         if(level.isClientSide())
             return;
         
         removeAllCreatedFieldBlocksInstantly(); // TODO: should not remove instantly
-    }
-    
-    public void addFieldProjector(IFieldProjector fieldProjector)
-    {
-        fieldProjectors.add(fieldProjector);
-    }
-    
-    public void removeFieldProjector(IFieldProjector fieldProjector)
-    {
-        if(fieldProjector != this)
-            fieldProjectors.remove(fieldProjector);
     }
     
     public void onFieldBlockDestroyed(BlockPos position)
@@ -216,17 +204,15 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         return level.isEmptyBlock(position);
     }
     
+    private boolean isImpossibleToBuildIn(BlockPos position)
+    {
+        return level.isOutsideBuildHeight(position);
+    }
+    
     private void initFieldBlock(BlockPos position)
     {
         FieldBlockEntity fieldBlockEntity = (FieldBlockEntity)level.getBlockEntity(position);
         fieldBlockEntity.setControllerPosition(worldPosition);
-    }
-    
-    @Deprecated // you should not remove all field blocks instantly
-    private void removeAllCreatedFieldBlocksInstantly()
-    {
-        requestToRemoveAllCreatedFieldBlocks();
-        removeRequestedFields(fieldsToRemove.size());
     }
     
     private void updateFieldBlockStatesFromWorldByShape()
@@ -266,6 +252,52 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         }
     }
     
+    @Deprecated // you should not remove all field blocks instantly
+    private void removeAllCreatedFieldBlocksInstantly()
+    {
+        requestToRemoveAllCreatedFieldBlocks();
+        removeRequestedFields(fieldsToRemove.size());
+    }
+    
+    private void createFieldBlocks(int count)
+    {
+        Set<BlockPos> justCreatedFields = new HashSet<>();
+        int leftPoses = notCreatedFields.size();
+        
+        while(leftPoses > 0 && count > 0)
+        {
+            int index = random.nextInt(leftPoses--);
+            var position = notCreatedFields.get(index);
+    
+            if(isImpossibleToBuildIn(position))
+            {
+                notCreatedFields.remove(index);
+                leftPoses--;
+                continue;
+            }
+            else
+            {
+                notCreatedFields.swap(index, leftPoses);
+                if(canBuildIn(position))
+                {
+                    IFieldProjector fieldProjector = getBestProjectorToBuild(position);
+                    if(fieldProjector == null)
+                        continue;
+        
+                    fieldProjector.onBuiltEnergyField(position);
+    
+                    boolean created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
+                    if(created)
+                    {
+                        justCreatedFields.add(position);
+                        count--;
+                    }
+                }
+            }
+        }
+        for(var position : justCreatedFields)
+            initFieldBlock(position);
+    }
     
     private void removeRequestedFields(int count)
     {
@@ -294,6 +326,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         return best;
     }
     
+    @Nullable
     private IFieldProjector getBestProjectorToSupport(BlockPos blockPos)
     {
         IFieldProjector best = null;
@@ -303,40 +336,15 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         {
             if(projector.canSupportEnergyField(blockPos))
             {
-                int energyToBuild = projector.getEnergyToSupportEnergyField(blockPos);
-                if(best == null || energyToBuild < minEnergy)
+                int energyToSupport = projector.getEnergyToSupportEnergyField(blockPos);
+                if(best == null || energyToSupport < minEnergy)
                 {
                     best = projector;
-                    minEnergy = energyToBuild;
+                    minEnergy = energyToSupport;
                 }
             }
         }
         return best;
-    }
-    
-    private void createFieldBlocks(int count)
-    {
-        for(var position : notCreatedFields.stream().toList())
-        {
-            if(count <= 0)
-                break;
-            
-            if(canBuildIn(position))
-            {
-                IFieldProjector fieldProjector = getBestProjectorToBuild(position);
-                if(fieldProjector == null)
-                    continue;
-    
-                fieldProjector.onBuiltEnergyField(position);
-                
-                boolean created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
-                if(created)
-                {
-                    initFieldBlock(position);
-                    count--;
-                }
-            }
-        }
     }
     
     @Override

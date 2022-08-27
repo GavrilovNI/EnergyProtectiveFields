@@ -38,7 +38,7 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
     public static final int ITEM_CAPABILITY_SIZE = 1;
     
     public static final int MAX_ENERGY_CAPACITY = 50000;
-    public static final int MAX_ENERGY_RECEIVE = 5000;
+    public static final int MAX_ENERGY_RECEIVE = 10000;
     
     public static final int ENERGY_TO_BUILD = 20;
     public static final int ENERGY_TO_SUPPORT = 4;
