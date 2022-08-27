@@ -147,17 +147,20 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
         }
     }
     
+    private void updateControllerFromLinker()
+    {
+        var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
+        var controllerLinker = ItemStackConvertor.getAs(controllerLinkerStack, ILinkingCard.class);
+        if(controllerLinker == null)
+            unlink();
+        else
+            link(controllerLinker.getConnectionInfo(controllerLinkerStack));
+    }
+    
     private void onInventoryContentChanged(int slot)
     {
         if(slot == SLOT_CONTROLLER_LINKER)
-        {
-            var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
-            var controllerLinker = ItemStackConvertor.getAs(controllerLinkerStack, ILinkingCard.class);
-            if(controllerLinker == null)
-                unlink();
-            else
-                link(controllerLinker.getConnectionInfo(controllerLinkerStack));
-        }
+            updateControllerFromLinker();
     }
     
     
@@ -200,6 +203,7 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
         lazyItemHandler = LazyOptional.of(() -> itemStackHandler);
         lazyEnergyStorage = LazyOptional.of(() -> energyStorage);
     
+        updateControllerFromLinker();
         link(linkedControllerInfo);
     }
     
@@ -216,8 +220,6 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
     {
         pTag.put("inventory", itemStackHandler.serializeNBT());
         pTag.put("energy", energyStorage.serializeNBT());
-        if(linkedControllerInfo != null)
-            pTag.put("controllerInfo", linkedControllerInfo.serializeNBT());
         super.saveAdditional(pTag);
     }
     
@@ -226,10 +228,6 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
     {
         itemStackHandler.deserializeNBT(pTag.getCompound("inventory"));
         energyStorage.deserializeNBT(pTag.getCompound("energy"));
-        if(pTag.contains("controllerInfo"))
-            linkedControllerInfo = new WorldLinks.LinkInfo(pTag.getCompound("controllerInfo"));
-        else
-            linkedControllerInfo = null;
         super.load(pTag);
     }
     
