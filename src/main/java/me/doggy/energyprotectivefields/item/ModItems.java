@@ -29,7 +29,7 @@ public class ModItems
     );
     
     public static final RegistryObject<Item> CARD_LINK = ITEMS.register("card_link", () ->
-            new CardLinkItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+            new LinkingCardItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

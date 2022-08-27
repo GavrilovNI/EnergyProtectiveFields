@@ -1,7 +1,9 @@
 package me.doggy.energyprotectivefields.item;
 
+import me.doggy.energyprotectivefields.ILinkingCard;
 import me.doggy.energyprotectivefields.api.BlockLocation;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
+import me.doggy.energyprotectivefields.data.WorldLinks;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -10,9 +12,9 @@ import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 
-public class CardLinkItem extends Item
+public class LinkingCardItem extends Item implements ILinkingCard
 {
-    public CardLinkItem(Properties pProperties)
+    public LinkingCardItem(Properties pProperties)
     {
         super(pProperties);
     }
@@ -41,7 +43,7 @@ public class CardLinkItem extends Item
                     itemStack = newItemStack;
                 }
                 
-                link(itemStack, blockEntity);
+                linkToController(itemStack, blockEntity);
                 player.addItem(itemStack);
             }
         }
@@ -67,18 +69,74 @@ public class CardLinkItem extends Item
         
         if(level.getBlockEntity(blockLocation) instanceof FieldControllerBlockEntity blockEntity)
         {
-            if(blockEntity.getUuid().equals(controllerId))
+            if(blockEntity.getUUID().equals(controllerId))
                 return blockEntity;
         }
         
         return null;
     }
     
-    public void link(ItemStack itemStack, FieldControllerBlockEntity blockEntity)
+    @Nullable
+    @Override
+    public WorldLinks.LinkInfo getConnectionInfo(ItemStack itemStack)
+    {
+        var tag = itemStack.getTagElement("target");
+    
+        if(tag == null)
+            return null;
+    
+        var blockLocation = BlockLocation.fromNBT(tag);
+        var controllerId = tag.getUUID("uuid");
+        return new WorldLinks.LinkInfo(blockLocation, controllerId);
+    }
+    
+    @Nullable
+    @Override
+    public FieldControllerBlockEntity findLinkedController(ItemStack itemStack, Level level, boolean onlyIfChunkIsLoaded)
+    {
+        var tag = itemStack.getTagElement("target");
+    
+        if(tag == null)
+            return null;
+    
+        var blockLocation = BlockLocation.fromNBT(tag);
+        var controllerId = tag.getUUID("uuid");
+    
+        var levelRegistryName = blockLocation.getLevelRegistryName();
+    
+        if(level.dimension().getRegistryName().equals(levelRegistryName) == false)
+            return null;
+        
+        if(onlyIfChunkIsLoaded && level.hasChunkAt(blockLocation) == false)
+            return null;
+    
+        if(level.getBlockEntity(blockLocation) instanceof FieldControllerBlockEntity blockEntity)
+        {
+            if(blockEntity.getUUID().equals(controllerId))
+                return blockEntity;
+        }
+    
+        return null;
+    }
+    
+    @Override
+    public void linkToController(ItemStack itemStack, FieldControllerBlockEntity blockEntity)
     {
         BlockLocation blockLocation = new BlockLocation(blockEntity.getLevel(), blockEntity.getBlockPos());
         var nbt = blockLocation.serializeNBT();
-        nbt.putUUID("id", blockEntity.getUuid());
+        nbt.putUUID("uuid", blockEntity.getUUID());
         itemStack.addTagElement("target", nbt);
+    }
+    
+    @Override
+    public void unlinkFromController(ItemStack itemStack)
+    {
+        itemStack.removeTagKey("target");
+    }
+    
+    @Override
+    public boolean isMyController(ItemStack itemStack, @Nullable FieldControllerBlockEntity controller, boolean onlyIfChunkIsLoaded)
+    {
+        return controller != null && controller == findLinkedController(itemStack, controller.getLevel(), onlyIfChunkIsLoaded);
     }
 }

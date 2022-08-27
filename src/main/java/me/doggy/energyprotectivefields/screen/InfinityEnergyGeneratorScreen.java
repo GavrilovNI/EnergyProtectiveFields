@@ -9,11 +9,11 @@ import net.minecraft.network.chat.TextComponent;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 
-public class TestEnergyGeneratorScreen extends BaseScreen<TestEnergyGeneratorMenu>
+public class InfinityEnergyGeneratorScreen extends BaseScreen<InfinityEnergyGeneratorMenu>
 {
     private EditBox maxExtractEditBox;
     
-    public TestEnergyGeneratorScreen(TestEnergyGeneratorMenu pMenu, Inventory pPlayerInventory, Component pTitle)
+    public InfinityEnergyGeneratorScreen(InfinityEnergyGeneratorMenu pMenu, Inventory pPlayerInventory, Component pTitle)
     {
         super(pMenu, pPlayerInventory, pTitle, "textures/gui/infinity_energy_generator_gui.png", 176, 166);
         

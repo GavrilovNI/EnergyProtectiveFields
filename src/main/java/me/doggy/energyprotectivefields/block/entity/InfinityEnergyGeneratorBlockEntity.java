@@ -2,7 +2,7 @@ package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.energy.InfinityEnergyStorage;
 import me.doggy.energyprotectivefields.block.ModBlocks;
-import me.doggy.energyprotectivefields.screen.TestEnergyGeneratorMenu;
+import me.doggy.energyprotectivefields.screen.InfinityEnergyGeneratorMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -69,7 +69,7 @@ public class InfinityEnergyGeneratorBlockEntity extends BlockEntity implements M
     @Override
     public AbstractContainerMenu createMenu(int pContainerId, Inventory pInventory, Player pPlayer)
     {
-        return new TestEnergyGeneratorMenu(pContainerId, pInventory, this);
+        return new InfinityEnergyGeneratorMenu(pContainerId, pInventory, this);
     }
     
     public int getMaxEnergyExtract()

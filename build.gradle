@@ -9,6 +9,7 @@ buildscript {
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
         classpath 'org.parchmentmc:librarian:1.+'
+        classpath 'com.google.guava:guava:31.1-jre'
         //classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }

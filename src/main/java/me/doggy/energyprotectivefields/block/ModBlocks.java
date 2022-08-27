@@ -48,6 +48,11 @@ public class ModBlocks
             ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
     );
     
+    public static final RegistryObject<Block> FIELD_PROJECTOR = registerBlockWithItem("field_projector",
+            () -> new FieldProjector(BlockBehaviour.Properties.of(Material.STONE)),
+            ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
+    );
+    
     private static boolean never(BlockState p_50779_, BlockGetter p_50780_, BlockPos p_50781_, EntityType<?> p_50782_)
     {
         return false;

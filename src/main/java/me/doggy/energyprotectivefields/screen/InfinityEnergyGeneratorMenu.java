@@ -11,17 +11,17 @@ import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-public class TestEnergyGeneratorMenu extends AbstractContainerWithEnergyMenu
+public class InfinityEnergyGeneratorMenu extends AbstractContainerWithEnergyMenu
 {
     private final InfinityEnergyGeneratorBlockEntity blockEntity;
     private final Level level;
     
-    public TestEnergyGeneratorMenu(int pContainerId, Inventory inventory, FriendlyByteBuf extraData)
+    public InfinityEnergyGeneratorMenu(int pContainerId, Inventory inventory, FriendlyByteBuf extraData)
     {
         this(pContainerId, inventory, inventory.player.level.getBlockEntity(extraData.readBlockPos()));
     }
     
-    public TestEnergyGeneratorMenu(int pContainerId, Inventory inventory, BlockEntity blockEntity)
+    public InfinityEnergyGeneratorMenu(int pContainerId, Inventory inventory, BlockEntity blockEntity)
     {
         super(ModMenuTypes.TEST_ENERGY_GENERATOR_MENU.get(), pContainerId, inventory.player, blockEntity);
         this.blockEntity = (InfinityEnergyGeneratorBlockEntity) blockEntity;
