@@ -1,8 +1,12 @@
 package me.doggy.energyprotectivefields.screen;
 
+import me.doggy.energyprotectivefields.api.module.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.IModule;
+import me.doggy.energyprotectivefields.api.module.ISizeUpgrade;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
+import me.doggy.energyprotectivefields.screen.slot.ModuleSlot;
 import me.doggy.energyprotectivefields.screen.slot.SlotItemHandlerWithNotifier;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -31,11 +35,9 @@ public class FieldControllerMenu extends AbstractContainerWithEnergyMenu
         
         this.blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(itemHandler -> {
             int index = 0;
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 60, 36));
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 82, 36));
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 100, 36));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 60, 36, IFieldShape.class));
             for(int i = 0; i < FieldControllerBlockEntity.MODULE_SLOTS_COUNT; ++i)
-                this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 120 + i % 3 * 18, 18 + i / 3 * 18));
+                this.addSlot(new ModuleSlot(itemHandler, index++, 82 + i % 3 * 18, 18 + i / 3 * 18, IModule.class));
         });
     }
     

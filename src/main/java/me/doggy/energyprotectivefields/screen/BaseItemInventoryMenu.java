@@ -3,13 +3,12 @@ package me.doggy.energyprotectivefields.screen;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class BaseItemInventoryMenu extends AbstractContainerMenu
+public abstract class BaseItemInventoryMenu extends BetterMenu
 {
     protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory inventory, Vec2i playerInventoryStart, Vec2i playerHotBarStart)
     {
@@ -34,6 +33,7 @@ public abstract class BaseItemInventoryMenu extends AbstractContainerMenu
     private static final int THIS_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
     
     public abstract int getSlotsCount();
+    
     
     @Override
     public ItemStack quickMoveStack(Player pPLayer, int pIndex)

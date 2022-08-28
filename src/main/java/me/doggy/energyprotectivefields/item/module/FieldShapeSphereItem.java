@@ -2,14 +2,10 @@ package me.doggy.energyprotectivefields.item.module;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;
-import me.doggy.energyprotectivefields.api.module.IFieldShapeChanger;
-import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 public class FieldShapeSphereItem extends Item implements IFieldShape
 {

@@ -41,11 +41,9 @@ import java.util.*;
 public class FieldControllerBlockEntity extends BlockEntity implements MenuProvider, IFieldProjector, IHaveUUID, ILinkable
 {
     public static final int SLOT_FIELD_SHAPE  = 0;
-    public static final int SLOT_SIZE_UPGRADE  = 1;
-    public static final int SLOT_STRENGTH_UPGRADE  = 2;
     
-    public static final int MODULE_SLOTS_COUNT = 6;
-    public static final int ITEM_CAPABILITY_SIZE = 3 + MODULE_SLOTS_COUNT;
+    public static final int MODULE_SLOTS_COUNT = 9;
+    public static final int ITEM_CAPABILITY_SIZE = 1 + MODULE_SLOTS_COUNT;
     
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -69,9 +67,9 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
                 updateShape();
         }
         
-        private boolean isModuleSlot(int slot)
+        private boolean isAdditionalModuleSlot(int slot)
         {
-            return slot > SLOT_STRENGTH_UPGRADE && slot < SLOT_STRENGTH_UPGRADE + MODULE_SLOTS_COUNT;
+            return slot > SLOT_FIELD_SHAPE && slot <= SLOT_FIELD_SHAPE + MODULE_SLOTS_COUNT;
         }
     
         @Override
@@ -80,32 +78,40 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             if(itemStack.isEmpty())
                 return true;
             
-            var classNeeded = switch(slot)
+            Class<? extends IModule> classNeeded = switch(slot)
                     {
                         case SLOT_FIELD_SHAPE -> IFieldShape.class;
-                        case SLOT_SIZE_UPGRADE -> ISizeUpgrade.class;
-                        case SLOT_STRENGTH_UPGRADE -> IStrengthUpgrade.class;
                         default -> null;
                     };
-            if(classNeeded == null && isModuleSlot(slot))
-            {
-                classNeeded = IModule.class;
-            }
+            if(classNeeded == null && isAdditionalModuleSlot(slot))
+                    classNeeded = IModule.class;
             
             if(classNeeded == null)
                 return false;
             
             return ItemStackConvertor.getAs(itemStack, classNeeded) != null;
         }
+        
+        private Optional<Integer> tryFindLimit(ItemStack itemStack)
+        {
+            IModule module = ItemStackConvertor.getAs(itemStack, IModule.class);
+            if(module != null)
+                return Optional.of(module.getLimitInControllerSlot(itemStack));
+            return Optional.empty();
+        }
     
+        @Deprecated // use getStackLimit instead
         @Override
         public int getSlotLimit(int slot)
         {
             var itemStack = getStackInSlot(slot);
-            if(itemStack.getItem() instanceof IModule module)
-                return module.getLimitInControllerSlot(itemStack);
-            
-            return super.getSlotLimit(slot);
+            return tryFindLimit(itemStack).orElse(super.getSlotLimit(slot));
+        }
+    
+        @Override
+        protected int getStackLimit(int slot, @NotNull ItemStack stack)
+        {
+            return tryFindLimit(stack).orElse(super.getStackLimit(slot, stack));
         }
     };
     
@@ -126,7 +132,6 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     
     private Set<BlockPos> shapePositions = new HashSet<>();
     private final HashSet<BlockPos> createdFields = new HashSet<>();
-    //private final HashSet<BlockPos> notCreatedFields = new HashSet<>();
     private final HashSet<BlockPos> fieldsToRemove = new HashSet<>();
     
     private final ArrayListSet<BlockPos> notCreatedFields = new ArrayListSet<>();

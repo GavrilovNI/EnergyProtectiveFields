@@ -9,6 +9,6 @@ public interface IModule
     
     default int getLimitInControllerSlot(ItemStack itemStack)
     {
-        return itemStack.getItem().getItemStackLimit(itemStack);
+        return itemStack.getMaxStackSize();
     }
 }
