@@ -81,6 +81,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     private final HashSet<BlockPos> fieldsToRemove = new HashSet<>();
     
     private final ArrayListSet<BlockPos> notCreatedFields = new ArrayListSet<>();
+    private final ArrayList<BlockPos> notCreatedTwiceFields = new ArrayList<>();
     
     public FieldControllerBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
@@ -134,6 +135,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         {
             createdFields.add(position);
             notCreatedFields.remove(position);
+            notCreatedTwiceFields.remove(position);
     
             if(shapePositions.contains(position) == false)
                 fieldsToRemove.add(position);
@@ -184,10 +186,12 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             {
                 createdFields.add(position);
                 notCreatedFields.remove(position);
+                notCreatedTwiceFields.remove(position);
             }
             else
             {
                 notCreatedFields.add(position);
+                notCreatedTwiceFields.remove(position);
                 createdFields.remove(position);
             }
         }
@@ -208,7 +212,10 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         for(var position : notCreatedFields.stream().toList())
         {
             if(shapePositions.contains(position) == false)
+            {
                 notCreatedFields.remove(position);
+                notCreatedTwiceFields.remove(position);
+            }
         }
     }
     
@@ -221,6 +228,11 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     
     private void createFieldBlocks(int count)
     {
+        if(notCreatedFields.isEmpty())
+        {
+            notCreatedFields.addAll(notCreatedTwiceFields);
+            notCreatedTwiceFields.clear();
+        }
         Set<BlockPos> justCreatedFields = new HashSet<>();
         int leftPoses = notCreatedFields.size();
         
@@ -237,21 +249,31 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             }
             else
             {
-                notCreatedFields.swap(index, leftPoses);
+                boolean created = false;
                 if(canBuildIn(position))
                 {
                     IFieldProjector fieldProjector = getBestProjectorToBuild(position);
-                    if(fieldProjector == null)
-                        continue;
-        
-                    fieldProjector.onBuiltEnergyField(position);
-    
-                    boolean created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
-                    if(created)
+                    if(fieldProjector != null)
                     {
-                        justCreatedFields.add(position);
-                        count--;
+                        fieldProjector.onBuiltEnergyField(position);
+    
+                        created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
+                        if(created)
+                        {
+                            justCreatedFields.add(position);
+                            count--;
+                        }
                     }
+                }
+                if(created)
+                {
+                    notCreatedFields.swap(index, leftPoses);
+                }
+                else
+                {
+                    notCreatedFields.remove(index);
+                    notCreatedTwiceFields.add(position);
+                    leftPoses--;
                 }
             }
         }

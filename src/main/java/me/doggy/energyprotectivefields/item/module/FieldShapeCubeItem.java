@@ -3,10 +3,12 @@ package me.doggy.energyprotectivefields.item.module;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class FieldShapeCubeItem extends Item implements IFieldShape
 {
@@ -21,13 +23,11 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
     public void addFields(ShapeBuilder shapeBuilder)
     {
         var center = shapeBuilder.getCenter();
-        var size = shapeBuilder.getSize();
+        var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
         
-        BoundingBox minBounds = getBounds(center, size, 0);
-        BoundingBox maxBounds = getBounds(center, size, strength);
-    
-        HashSet<BlockPos> result = new HashSet<>();
+        BoundingBox minBounds = getBounds(center, sizes, 0);
+        BoundingBox maxBounds = getBounds(center, sizes, strength);
         
         for(int s = 0; s < strength + 1; ++s)
         {
@@ -62,17 +62,15 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
         }
     }
     
-    public BoundingBox getBounds(BlockPos center, int sizeUpgrade, int strengthUpgrade)
+    public BoundingBox getBounds(BlockPos center, Map<Direction, Integer> sizes, int strengthUpgrade)
     {
-        if(sizeUpgrade < 0)
-            throw new IllegalArgumentException("sizeUpgrade must not be negative");
         if(strengthUpgrade < 0)
             throw new IllegalArgumentException("strengthUpgrade must not be negative");
         
-        int size = DEFAULT_RADIUS + sizeUpgrade + strengthUpgrade;
+        int minSize = DEFAULT_RADIUS + strengthUpgrade;
         
-        BlockPos minPos = center.offset(-size, -size, -size);
-        BlockPos maxPos = center.offset(size, size, size);
+        BlockPos minPos = center.offset(-minSize - sizes.get(Direction.WEST), -minSize - sizes.get(Direction.DOWN), -minSize - sizes.get(Direction.NORTH));
+        BlockPos maxPos = center.offset(minSize + sizes.get(Direction.EAST), minSize + sizes.get(Direction.UP), minSize + sizes.get(Direction.SOUTH));
         
         return BoundingBox.fromCorners(minPos, maxPos);
     }

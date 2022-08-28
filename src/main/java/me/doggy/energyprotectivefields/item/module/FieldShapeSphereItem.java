@@ -2,10 +2,8 @@ package me.doggy.energyprotectivefields.item.module;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;
-import net.minecraft.core.BlockPos;
+import me.doggy.energyprotectivefields.api.module.ISizeUpgrade;
 import net.minecraft.world.item.Item;
-
-import java.util.HashSet;
 
 public class FieldShapeSphereItem extends Item implements IFieldShape
 {
@@ -20,14 +18,20 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
     public void addFields(ShapeBuilder shapeBuilder)
     {
         var center = shapeBuilder.getCenter();
-        var size = shapeBuilder.getSize();
+        var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
         
-        HashSet<BlockPos> result = new HashSet<>();
+        var totalSize = 0;
+        for(var size : sizes.values())
+        {
+            if(totalSize < size)
+                totalSize = size;
+        }
+        totalSize += MIN_RADIUS;
     
-        int smallRadius = MIN_RADIUS + size - 1;
-        int bigRadius = MIN_RADIUS + size + strength;
-        
+        int smallRadius = totalSize - 1;
+        int bigRadius = totalSize + strength;
+    
         for(int x = 0; x <= bigRadius; ++x)
         {
             for(int y = 0; y <= bigRadius; ++y)

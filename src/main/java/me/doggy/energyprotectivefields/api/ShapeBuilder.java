@@ -9,8 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 
 public class ShapeBuilder
 {
@@ -19,8 +18,8 @@ public class ShapeBuilder
     private final FieldControllerBlockEntity controller;
     private final Collection<ModuleInfo<IShapeModule>> modules;
     
+    private final HashMap<Direction, Integer> sizes = new HashMap<>();
     private BlockPos center;
-    private int size;
     private int strength;
     
     public ShapeBuilder(FieldControllerBlockEntity controller, Collection<ModuleInfo<IShapeModule>> modules)
@@ -29,7 +28,6 @@ public class ShapeBuilder
         this.modules = modules;
         
         center = controller.getBlockPos();
-        size = 0;
         strength = 0;
     }
     
@@ -56,16 +54,39 @@ public class ShapeBuilder
         return this;
     }
     
-    public int getSize()
+    public int getSize(Direction direction)
     {
-        return size;
+        return sizes.getOrDefault(direction, 0);
+    }
+    
+    public Map<Direction, Integer> getSizes()
+    {
+        var result = new HashMap<>(sizes);
+        for(var direction : Direction.values())
+            result.put(direction, result.getOrDefault(direction, 0));
+        return result;
     }
     
     public ShapeBuilder setSize(int size)
     {
         if(size < 0)
             throw new IllegalArgumentException("Size must not be negative.");
-        this.size = size;
+        for(var direction : Direction.values())
+            this.sizes.put(direction, size);
+        return this;
+    }
+    
+    public ShapeBuilder setSize(@Nullable Direction direction, int size)
+    {
+        if(direction == null)
+        {
+            setSize(size);
+            return this;
+        }
+        
+        if(size < 0)
+            throw new IllegalArgumentException("Size must not be negative.");
+        this.sizes.put(direction, size);
         return this;
     }
     
