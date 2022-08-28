@@ -1,8 +1,10 @@
 package me.doggy.energyprotectivefields.block.entity;
 
-import me.doggy.energyprotectivefields.EnergyProtectiveFields;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.module.*;
 import me.doggy.energyprotectivefields.api.utils.ArrayListSet;
 import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
@@ -23,7 +25,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -43,7 +44,8 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     public static final int SLOT_SIZE_UPGRADE  = 1;
     public static final int SLOT_STRENGTH_UPGRADE  = 2;
     
-    public static final int ITEM_CAPABILITY_SIZE = 3;
+    public static final int MODULE_SLOTS_COUNT = 6;
+    public static final int ITEM_CAPABILITY_SIZE = 3 + MODULE_SLOTS_COUNT;
     
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -66,6 +68,11 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             if(level.isClientSide() == false)
                 updateShape();
         }
+        
+        private boolean isModuleSlot(int slot)
+        {
+            return slot > SLOT_STRENGTH_UPGRADE && slot < SLOT_STRENGTH_UPGRADE + MODULE_SLOTS_COUNT;
+        }
     
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
@@ -80,6 +87,10 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
                         case SLOT_STRENGTH_UPGRADE -> IStrengthUpgrade.class;
                         default -> null;
                     };
+            if(classNeeded == null && isModuleSlot(slot))
+            {
+                classNeeded = IModule.class;
+            }
             
             if(classNeeded == null)
                 return false;
@@ -90,8 +101,10 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         @Override
         public int getSlotLimit(int slot)
         {
-            if(slot == SLOT_FIELD_SHAPE)
-                return 1;
+            var itemStack = getStackInSlot(slot);
+            if(itemStack.getItem() instanceof IModule module)
+                return module.getLimitInControllerSlot(itemStack);
+            
             return super.getSlotLimit(slot);
         }
     };
@@ -176,18 +189,28 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         }
     }
     
+    private<T extends IModule> Multimap<T, Integer> getModules(Class<T> clazz)
+    {
+        Multimap<T, Integer> modules = ArrayListMultimap.create();
+    
+        for(int i = 0; i < itemStackHandler.getSlots(); ++i)
+        {
+            var moduleStack = itemStackHandler.getStackInSlot(i);
+            var module = ItemStackConvertor.getAs(moduleStack, clazz);
+            if(module != null)
+                modules.put(module, moduleStack.getCount());
+        }
+        return modules;
+    }
+    
     private void updateShape()
     {
         IFieldShape fieldShape = ItemStackConvertor.getAs(itemStackHandler.getStackInSlot(SLOT_FIELD_SHAPE), IFieldShape.class);
         if(fieldShape != null)
         {
-            var sizeUpgradeStack = itemStackHandler.getStackInSlot(SLOT_SIZE_UPGRADE);
-            int sizeUpgrade = sizeUpgradeStack.isEmpty() ? 0 : sizeUpgradeStack.getCount() * ItemStackConvertor.getAs(sizeUpgradeStack, ISizeUpgrade.class).getSizeMultiplier();
-    
-            var strengthUpgradeStack = itemStackHandler.getStackInSlot(SLOT_STRENGTH_UPGRADE);
-            int strengthUpgrade = strengthUpgradeStack.isEmpty() ? 0 : strengthUpgradeStack.getCount() * ItemStackConvertor.getAs(strengthUpgradeStack, IStrengthUpgrade.class).getStrengthMultiplier();
-    
-            shapePositions = fieldShape.getShieldPoses(worldPosition, sizeUpgrade, strengthUpgrade);
+            var modules = getModules(IModule.class);
+            ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
+            shapePositions = shapeBuilder.init().addFields(fieldShape).build();
         }
         else
         {

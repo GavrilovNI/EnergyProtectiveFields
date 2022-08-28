@@ -2,6 +2,7 @@ package me.doggy.energyprotectivefields.item;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.ModCreativeModeTab;
+import me.doggy.energyprotectivefields.item.module.*;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -30,6 +31,10 @@ public class ModItems
     
     public static final RegistryObject<Item> CARD_LINK = ITEMS.register("card_link", () ->
             new LinkingCardItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    public static final RegistryObject<Item> DOME_MODULE = ITEMS.register("dome_module", () ->
+            new DomeModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

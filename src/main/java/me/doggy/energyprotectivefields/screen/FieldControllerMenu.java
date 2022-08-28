@@ -30,10 +30,12 @@ public class FieldControllerMenu extends AbstractContainerWithEnergyMenu
         this.level = inventory.player.level;
         
         this.blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(itemHandler -> {
-            int i = 0;
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, i++, 60, 36));
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, i++, 82, 36));
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, i++, 100, 36));
+            int index = 0;
+            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 60, 36));
+            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 82, 36));
+            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 100, 36));
+            for(int i = 0; i < FieldControllerBlockEntity.MODULE_SLOTS_COUNT; ++i)
+                this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, index++, 120 + i % 3 * 18, 18 + i / 3 * 18));
         });
     }
     

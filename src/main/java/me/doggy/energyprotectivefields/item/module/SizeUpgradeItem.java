@@ -1,6 +1,6 @@
-package me.doggy.energyprotectivefields.item;
+package me.doggy.energyprotectivefields.item.module;
 
-import me.doggy.energyprotectivefields.api.ISizeUpgrade;
+import me.doggy.energyprotectivefields.api.module.ISizeUpgrade;
 import net.minecraft.world.item.Item;
 
 public class SizeUpgradeItem extends Item implements ISizeUpgrade
