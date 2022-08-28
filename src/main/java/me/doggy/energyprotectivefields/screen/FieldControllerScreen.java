@@ -7,6 +7,7 @@ public class FieldControllerScreen extends BaseEnergyScaledScreen<FieldControlle
 {
     public FieldControllerScreen(FieldControllerMenu pMenu, Inventory pPlayerInventory, Component pTitle)
     {
-        super(pMenu, pPlayerInventory, pTitle, "textures/gui/field_controller_gui.png", 176, 174);
+        super(pMenu, pPlayerInventory, pTitle, "textures/gui/field_controller_gui.png", 176, 183);
+        energyScaleHeight = 70;
     }
 }

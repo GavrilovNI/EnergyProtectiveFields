@@ -1,15 +1,13 @@
 package me.doggy.energyprotectivefields.block.entity;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.module.*;
 import me.doggy.energyprotectivefields.api.utils.ArrayListSet;
-import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
+import me.doggy.energyprotectivefields.data.handler.FieldControllerItemStackHandler;
 import me.doggy.energyprotectivefields.screen.FieldControllerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -23,7 +21,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,7 +29,6 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,10 +36,7 @@ import java.util.*;
 
 public class FieldControllerBlockEntity extends BlockEntity implements MenuProvider, IFieldProjector, IHaveUUID, ILinkable
 {
-    public static final int SLOT_FIELD_SHAPE  = 0;
     
-    public static final int MODULE_SLOTS_COUNT = 9;
-    public static final int ITEM_CAPABILITY_SIZE = 1 + MODULE_SLOTS_COUNT;
     
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -57,7 +50,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     private UUID uuid;
     private final Random random;
     
-    private final ItemStackHandler itemStackHandler = new ItemStackHandler(ITEM_CAPABILITY_SIZE)
+    private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
         @Override
         protected void onContentsChanged(int slot)
@@ -65,53 +58,6 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             setChanged();
             if(level.isClientSide() == false)
                 updateShape();
-        }
-        
-        private boolean isAdditionalModuleSlot(int slot)
-        {
-            return slot > SLOT_FIELD_SHAPE && slot <= SLOT_FIELD_SHAPE + MODULE_SLOTS_COUNT;
-        }
-    
-        @Override
-        public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
-        {
-            if(itemStack.isEmpty())
-                return true;
-            
-            Class<? extends IModule> classNeeded = switch(slot)
-                    {
-                        case SLOT_FIELD_SHAPE -> IFieldShape.class;
-                        default -> null;
-                    };
-            if(classNeeded == null && isAdditionalModuleSlot(slot))
-                    classNeeded = IModule.class;
-            
-            if(classNeeded == null)
-                return false;
-            
-            return ItemStackConvertor.getAs(itemStack, classNeeded) != null;
-        }
-        
-        private Optional<Integer> tryFindLimit(ItemStack itemStack)
-        {
-            IModule module = ItemStackConvertor.getAs(itemStack, IModule.class);
-            if(module != null)
-                return Optional.of(module.getLimitInControllerSlot(itemStack));
-            return Optional.empty();
-        }
-    
-        @Deprecated // use getStackLimit instead
-        @Override
-        public int getSlotLimit(int slot)
-        {
-            var itemStack = getStackInSlot(slot);
-            return tryFindLimit(itemStack).orElse(super.getSlotLimit(slot));
-        }
-    
-        @Override
-        protected int getStackLimit(int slot, @NotNull ItemStack stack)
-        {
-            return tryFindLimit(stack).orElse(super.getStackLimit(slot, stack));
         }
     };
     
@@ -194,26 +140,12 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         }
     }
     
-    private<T extends IModule> Multimap<T, Integer> getModules(Class<T> clazz)
-    {
-        Multimap<T, Integer> modules = ArrayListMultimap.create();
-    
-        for(int i = 0; i < itemStackHandler.getSlots(); ++i)
-        {
-            var moduleStack = itemStackHandler.getStackInSlot(i);
-            var module = ItemStackConvertor.getAs(moduleStack, clazz);
-            if(module != null)
-                modules.put(module, moduleStack.getCount());
-        }
-        return modules;
-    }
-    
     private void updateShape()
     {
-        IFieldShape fieldShape = ItemStackConvertor.getAs(itemStackHandler.getStackInSlot(SLOT_FIELD_SHAPE), IFieldShape.class);
+        IFieldShape fieldShape = itemStackHandler.getShape();
         if(fieldShape != null)
         {
-            var modules = getModules(IModule.class);
+            var modules = itemStackHandler.getModulesInfo(IShapeModule.class);
             ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
             shapePositions = shapeBuilder.init().addFields(fieldShape).build();
         }

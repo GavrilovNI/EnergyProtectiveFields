@@ -1,9 +1,10 @@
 package me.doggy.energyprotectivefields.api.module;
 
+import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import net.minecraft.world.item.ItemStack;
 
-public interface IFieldShape extends IModule
+public interface IFieldShape extends IShapeModule
 {
     void addFields(ShapeBuilder shapeBuilder);
     
@@ -14,5 +15,5 @@ public interface IFieldShape extends IModule
     }
     
     @Override
-    default void applyOnInit(ShapeBuilder builder, int stackSize){}
+    default void applyOnInit(ShapeBuilder builder, ModuleInfo moduleInfo){}
 }

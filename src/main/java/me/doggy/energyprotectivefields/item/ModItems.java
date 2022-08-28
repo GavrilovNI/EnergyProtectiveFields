@@ -37,6 +37,10 @@ public class ModItems
             new DomeModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
+    public static final RegistryObject<Item> MOVE_MODULE = ITEMS.register("move_module", () ->
+            new MoveModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
     public static void register(IEventBus eventBus)
     {
         ITEMS.register(eventBus);

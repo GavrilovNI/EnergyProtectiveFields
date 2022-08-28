@@ -1,12 +1,15 @@
 package me.doggy.energyprotectivefields.api;
 
-import com.google.common.collect.Multimap;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.IFieldShapeChanger;
 import me.doggy.energyprotectivefields.api.module.IModule;
+import me.doggy.energyprotectivefields.api.module.IShapeModule;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.HashSet;
 
 public class ShapeBuilder
@@ -14,13 +17,13 @@ public class ShapeBuilder
     private final HashSet<BlockPos> positions = new HashSet<>();
     
     private final FieldControllerBlockEntity controller;
-    private final Multimap<IModule, Integer> modules;
+    private final Collection<ModuleInfo<IShapeModule>> modules;
     
     private BlockPos center;
     private int size;
     private int strength;
     
-    public ShapeBuilder(FieldControllerBlockEntity controller, Multimap<IModule, Integer> modules)
+    public ShapeBuilder(FieldControllerBlockEntity controller, Collection<ModuleInfo<IShapeModule>> modules)
     {
         this.controller = controller;
         this.modules = modules;
@@ -32,8 +35,8 @@ public class ShapeBuilder
     
     public ShapeBuilder init()
     {
-        for(var entry : modules.entries())
-            entry.getKey().applyOnInit(this, entry.getValue());
+        for(var moduleInfo : modules)
+            moduleInfo.getModule().applyOnInit(this, moduleInfo);
         return this;
     }
     
@@ -81,9 +84,9 @@ public class ShapeBuilder
     
     public ShapeBuilder addField(BlockPos blockPos)
     {
-        for(var module : modules.keys())
+        for(var moduleInfo : modules)
         {
-            if(module instanceof IFieldShapeChanger fieldShapeChanger)
+            if(moduleInfo.getModule() instanceof IFieldShapeChanger fieldShapeChanger)
                 if(fieldShapeChanger.isInShape(this, blockPos) == false)
                     return this;
         }
