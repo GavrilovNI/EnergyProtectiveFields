@@ -3,7 +3,6 @@ package me.doggy.energyprotectivefields.block.entity;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.module.*;
-import me.doggy.energyprotectivefields.api.utils.ArrayListSet;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
@@ -80,8 +79,8 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     private final HashSet<BlockPos> createdFields = new HashSet<>();
     private final HashSet<BlockPos> fieldsToRemove = new HashSet<>();
     
-    private final ArrayListSet<BlockPos> notCreatedFields = new ArrayListSet<>();
-    private final ArrayList<BlockPos> notCreatedTwiceFields = new ArrayList<>();
+    private HashSet<BlockPos> notCreatedFields = new HashSet<>();
+    private HashSet<BlockPos> notCreatedTwiceFields = new HashSet<>();
     
     public FieldControllerBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
@@ -158,7 +157,11 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     
         fieldsToRemove.removeAll(shapePositions);
         requestToRemoveAllFieldBlocksWhichNotInShape();
-        updateFieldBlockStatesFromWorldByShape();
+        
+        notCreatedFields.addAll(shapePositions);
+        notCreatedFields.removeAll(createdFields);
+        notCreatedFields.removeAll(notCreatedTwiceFields);
+        //updateFieldBlockStatesFromWorldByShape();
     }
     
     private boolean canBuildIn(BlockPos position)
@@ -212,10 +215,13 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         for(var position : notCreatedFields.stream().toList())
         {
             if(shapePositions.contains(position) == false)
-            {
                 notCreatedFields.remove(position);
+        }
+    
+        for(var position : notCreatedTwiceFields.stream().toList())
+        {
+            if(shapePositions.contains(position) == false)
                 notCreatedTwiceFields.remove(position);
-            }
         }
     }
     
@@ -228,23 +234,21 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     
     private void createFieldBlocks(int count)
     {
-        if(notCreatedFields.isEmpty())
+        if(notCreatedFields.isEmpty() && notCreatedTwiceFields.isEmpty() == false)
         {
-            notCreatedFields.addAll(notCreatedTwiceFields);
-            notCreatedTwiceFields.clear();
+            notCreatedFields = notCreatedTwiceFields;
+            notCreatedTwiceFields = new HashSet<>();
         }
         Set<BlockPos> justCreatedFields = new HashSet<>();
-        int leftPoses = notCreatedFields.size();
+        Set<BlockPos> fieldsToEraseFromSet = new HashSet<>();
         
-        while(leftPoses > 0 && count > 0)
+        for(var position : notCreatedFields)
         {
-            int index = random.nextInt(leftPoses--);
-            var position = notCreatedFields.get(index);
-    
+            if(count <= 0)
+                break;
             if(isImpossibleToBuildIn(position))
             {
-                notCreatedFields.remove(index);
-                leftPoses--;
+                fieldsToEraseFromSet.add(position);
                 continue;
             }
             else
@@ -256,7 +260,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
                     if(fieldProjector != null)
                     {
                         fieldProjector.onBuiltEnergyField(position);
-    
+                
                         created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
                         if(created)
                         {
@@ -265,18 +269,15 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
                         }
                     }
                 }
-                if(created)
+                if(created == false)
                 {
-                    notCreatedFields.swap(index, leftPoses);
-                }
-                else
-                {
-                    notCreatedFields.remove(index);
+                    fieldsToEraseFromSet.add(position);
                     notCreatedTwiceFields.add(position);
-                    leftPoses--;
                 }
             }
         }
+        
+        notCreatedFields.removeAll(fieldsToEraseFromSet);
         for(var position : justCreatedFields)
             initFieldBlock(position);
     }
