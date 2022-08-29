@@ -43,8 +43,8 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     public static final int MAX_ENERGY_CAPACITY = 50000;
     public static final int MAX_ENERGY_RECEIVE = 10000;
     
-    public static final int ENERGY_TO_BUILD = 20;
-    public static final int ENERGY_TO_SUPPORT = 4;
+    public static final int ENERGY_TO_BUILD = 0;
+    public static final int ENERGY_TO_SUPPORT = 0;
     
     private UUID uuid;
     private final Random random;

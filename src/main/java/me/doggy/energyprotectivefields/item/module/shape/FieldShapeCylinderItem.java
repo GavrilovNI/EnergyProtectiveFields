@@ -15,11 +15,6 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
         super(pProperties);
     }
     
-    private interface Predicate4<A,B,C,D>
-    {
-        boolean test(A a, B b, C c, D d);
-    }
-    
     //info: https://enchantia.com/software/graphapp/doc/tech/ellipses.html#:~:text=3.1%20McIlroy%27s%20Ellipse%20Algorithm%201
     private void drawCylinderQuarter(ShapeBuilder shapeBuilder, int quarterIndex, int addRadius)
     {
