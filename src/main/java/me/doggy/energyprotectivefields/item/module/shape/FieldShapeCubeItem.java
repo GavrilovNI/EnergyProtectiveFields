@@ -1,4 +1,4 @@
-package me.doggy.energyprotectivefields.item.module;
+package me.doggy.energyprotectivefields.item.module.shape;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;

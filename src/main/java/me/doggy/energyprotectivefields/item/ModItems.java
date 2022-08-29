@@ -3,6 +3,9 @@ package me.doggy.energyprotectivefields.item;
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.ModCreativeModeTab;
 import me.doggy.energyprotectivefields.item.module.*;
+import me.doggy.energyprotectivefields.item.module.shape.FieldShapeCubeItem;
+import me.doggy.energyprotectivefields.item.module.shape.FieldShapeCylinderItem;
+import me.doggy.energyprotectivefields.item.module.shape.FieldShapeSphereItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -19,6 +22,10 @@ public class ModItems
     
     public static final RegistryObject<Item> FIELD_SHAPE_SPHERE = ITEMS.register("field_shape_sphere", () ->
             new FieldShapeSphereItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    public static final RegistryObject<Item> FIELD_SHAPE_CYLINDER = ITEMS.register("field_shape_cylinder", () ->
+            new FieldShapeCylinderItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static final RegistryObject<Item> STRENGTH_UPGRADE = ITEMS.register("strength_upgrade", () ->
