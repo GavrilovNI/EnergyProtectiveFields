@@ -2,114 +2,84 @@ package me.doggy.energyprotectivefields.item.module.shape;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.IFieldShape;
+import me.doggy.energyprotectivefields.api.utils.Math3D;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.phys.Vec3;
 
 public class FieldShapeCylinderItem extends Item implements IFieldShape
 {
-    public final int DEFAULT_RADIUS = 4;
-    public final int MIN_HEIGHT = 1;
+    public final int MIN_RADIUS = 4;
+    public final int MIN_HEIGHT = 4;
     
     public FieldShapeCylinderItem(Properties pProperties)
     {
         super(pProperties);
     }
     
-    //info: https://enchantia.com/software/graphapp/doc/tech/ellipses.html#:~:text=3.1%20McIlroy%27s%20Ellipse%20Algorithm%201
-    private void drawCylinderQuarter(ShapeBuilder shapeBuilder, int quarterIndex, int addRadius)
+    private void buildCylinderQuarter2(ShapeBuilder shapeBuilder, int quarterIndex)
     {
-        int radiusX = DEFAULT_RADIUS + addRadius;
-        int radiusZ = DEFAULT_RADIUS + addRadius;
-        
+        var centerBlock = shapeBuilder.getCenter();
         var sizes = shapeBuilder.getSizes();
+        var additiveStrength = shapeBuilder.getStrength();
     
-        var offsetDown = sizes.get(Direction.DOWN) - ((MIN_HEIGHT - 1) / 2);
-        var height = offsetDown + sizes.get(Direction.UP) + MIN_HEIGHT;
+        var dirX = (quarterIndex & 1) == 0 ? Direction.EAST : Direction.WEST;
+        var dirZ = (quarterIndex & 2) == 0 ? Direction.SOUTH : Direction.NORTH;
     
-        var centerBlock = shapeBuilder.getCenter().offset(0, -offsetDown, 0);
+        var sizeDown = sizes.get(Direction.DOWN);
+        var offsetInnerDown = sizeDown + ((MIN_HEIGHT - 1) / 2) - 1;
+        var innerHeight = Math.max(sizeDown + sizes.get(Direction.UP) + MIN_HEIGHT - 2, 0);
     
-        int offsetMultiplierX;
-        int offsetMultiplierZ;
-        
-        switch(quarterIndex)
+        Vec3i size = new Vec3i(sizes.get(dirX), innerHeight, sizes.get(dirZ)).offset(MIN_RADIUS, MIN_RADIUS, MIN_RADIUS);
+        Vec3i sizeBig = size.offset(additiveStrength, additiveStrength, additiveStrength);
+    
+        Vec3 centerOfCenterBlockLocal = Vec3.atCenterOf(Vec3i.ZERO).subtract(0, offsetInnerDown, 0);
+        Vec3i resultMultiplier = new Vec3i(dirX.getNormal().getX(), 1, dirZ.getNormal().getZ());
+    
+        for(int x = 0; x <= size.getX() + additiveStrength; ++x)
         {
-            case 0:
-                radiusX += sizes.get(Direction.EAST);
-                radiusZ += + sizes.get(Direction.SOUTH);
-                offsetMultiplierX = 1;
-                offsetMultiplierZ = 1;
-                break;
-            case 1:
-                radiusX += + sizes.get(Direction.WEST);
-                radiusZ += + sizes.get(Direction.SOUTH);
-                offsetMultiplierX = -1;
-                offsetMultiplierZ = 1;
-                break;
-            case 2:
-                radiusX += + sizes.get(Direction.WEST);
-                radiusZ += + sizes.get(Direction.NORTH);
-                offsetMultiplierX = -1;
-                offsetMultiplierZ = -1;
-                break;
-            case 3:
-                radiusX += + sizes.get(Direction.EAST);
-                radiusZ += + sizes.get(Direction.NORTH);
-                offsetMultiplierX = 1;
-                offsetMultiplierZ = -1;
-                break;
-            default:
-                throw new IllegalArgumentException("quarterIndex out of bounds [0,3]");
-        }
-    
-        long radiusXsqr = ((long)radiusX) * radiusX;
-        long radiusZsqr = ((long)radiusZ) * radiusZ;
-    
-        int x = 0;
-        int z = radiusZ;
-        long crit1 = -(radiusXsqr / 4 + radiusX % 2 + radiusZsqr);
-        long crit2 = -(radiusZsqr / 4 + radiusZ % 2 + radiusXsqr);
-        long crit3 = -(radiusZsqr / 4 + radiusZ % 2);
-        long t = -radiusXsqr * z;
-        long dxt = 0; // x * 2 * radiusZsqr;
-        long dzt = -2 * radiusXsqr * z;
-        long d2xt = 2 * radiusZsqr;
-        long d2zt = 2 * radiusXsqr;
-        
-        while(z >= 0 && x <= radiusX)
-        {
-            for(int y = 0; y < height; y++)
-                shapeBuilder.addField(centerBlock.offset(x * offsetMultiplierX, y, z * offsetMultiplierZ));
+            for(int z = 0; z <= size.getZ() + additiveStrength; ++z)
+            {
+                Vec3i blockPos = new Vec3i(x, -offsetInnerDown, z);
+                
+                Vec3 closestPoint = Math3D.getClosestPointOfBlock(blockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
+                double posLocationClosest = (closestPoint.x * closestPoint.x) / (sizeBig.getX() * sizeBig.getX()) +
+                                            (closestPoint.z * closestPoint.z) / (sizeBig.getZ() * sizeBig.getZ());
+                boolean isClosestInside = posLocationClosest <= 1;
             
-            if(t + radiusZsqr * x <= crit1 || t + radiusXsqr * z <= crit3)
-            {
-                x++;
-                dxt += d2xt;
-                t += dxt;
-            }
-            else if(t - radiusXsqr * z > crit2)
-            {
-                z--;
-                dzt += d2zt;
-                t += dzt;
-            }
-            else
-            {
-                x++;
-                dxt += d2xt;
-                t += dxt;
-                z--;
-                dzt += d2zt;
-                t += dzt;
+                if(isClosestInside)
+                {
+                    BlockPos result = Math3D.multiply(blockPos, resultMultiplier).offset(centerBlock);
+                    
+                    if(innerHeight > 0)
+                    {
+                        Vec3 farthestPoint = Math3D.getFarthestPointOfBlock(blockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
+                        double posLocationFarthest = (farthestPoint.x * farthestPoint.x) / (size.getX() * size.getX()) +
+                                (farthestPoint.z * farthestPoint.z) / (size.getZ() * size.getZ());
+                        boolean isFarthestOutside = posLocationFarthest > 1;
+                        if(isFarthestOutside)
+                        {
+                            for(int y = 0; y < innerHeight; y++)
+                                shapeBuilder.addField(result.above(y));
+                        }
+                    }
+                    
+                    for(int i = 0; i < additiveStrength + 1; ++i)
+                    {
+                        shapeBuilder.addField(result.below(i + 1));
+                        shapeBuilder.addField(result.above(i + innerHeight));
+                    }
+                }
             }
         }
-        
     }
     
     @Override
     public void addFields(ShapeBuilder shapeBuilder)
     {
-        for(int s = 0; s <= shapeBuilder.getStrength(); ++s)
-            for(int i = 0; i < 4; ++i)
-                drawCylinderQuarter(shapeBuilder, i, DEFAULT_RADIUS + s);
+        for(int i = 0; i < 4; ++i)
+            buildCylinderQuarter2(shapeBuilder, i);
     }
 }
