@@ -1,10 +1,11 @@
 package me.doggy.energyprotectivefields.block.entity;
 
-import me.doggy.energyprotectivefields.ILinkingCard;
-import me.doggy.energyprotectivefields.api.IFieldProjector;
+import me.doggy.energyprotectivefields.api.FieldSet;
+import me.doggy.energyprotectivefields.api.ILinkingCard;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
 import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
-import me.doggy.energyprotectivefields.block.FieldControllerBlock;
+import me.doggy.energyprotectivefields.block.FieldProjectorBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
 import me.doggy.energyprotectivefields.screen.FieldProjectorMenu;
@@ -21,7 +22,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -32,17 +33,15 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvider, IFieldProjector
+public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity implements MenuProvider
 {
     public static final int SLOT_CONTROLLER_LINKER = 0;
     public static final int ITEM_CAPABILITY_SIZE = 1;
     
-    public static final int MAX_ENERGY_CAPACITY = 50000;
-    public static final int MAX_ENERGY_RECEIVE = 10000;
+    public static final int DEFAULT_ENERGY_CAPACITY = 50000;
+    public static final int DEFAULT_MAX_ENERGY_RECEIVE = 10000;
     
-    public static final int ENERGY_TO_BUILD = 20;
-    public static final int ENERGY_TO_SUPPORT = 4;
-    
+    private WorldLinks.LinkInfo linkedControllerInfo = null;
     
     private final ItemStackHandler itemStackHandler = new ItemStackHandler(ITEM_CAPABILITY_SIZE)
     {
@@ -50,10 +49,10 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
         protected void onContentsChanged(int slot)
         {
             setChanged();
-            if(level.isClientSide() == false)
-                onInventoryContentChanged(slot);
+            if(slot == SLOT_CONTROLLER_LINKER)
+                updateControllerFromLinker();
         }
-    
+        
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
         {
@@ -71,7 +70,7 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
             
             return ItemStackConvertor.getAs(itemStack, classNeeded) != null;
         }
-    
+        
         @Override
         public int getSlotLimit(int slot)
         {
@@ -80,8 +79,8 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
             return super.getSlotLimit(slot);
         }
     };
-    
-    private final BetterEnergyStorage energyStorage = new BetterEnergyStorage(0, MAX_ENERGY_CAPACITY, MAX_ENERGY_RECEIVE, 0)
+    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(0, DEFAULT_ENERGY_CAPACITY,
+            DEFAULT_MAX_ENERGY_RECEIVE, 0)
     {
         @Override
         public void onChanged()
@@ -91,60 +90,46 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
         }
     };
     
-    private LazyOptional<BetterEnergyStorage> lazyEnergyStorage = LazyOptional.empty();
-    
     private LazyOptional<IItemHandler> lazyItemHandler = LazyOptional.empty();
-    
-    private WorldLinks.LinkInfo linkedControllerInfo = null;
+    private LazyOptional<BetterEnergyStorage> lazyEnergyStorage = LazyOptional.empty();
     
     public FieldProjectorBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
         super(ModBlockEntities.FIELD_PROJECTOR.get(), pWorldPosition, pBlockState);
     }
     
-    public boolean isEnabled()
+    @Override
+    public void onEnabled()
     {
-        return getBlockState().getValue(FieldControllerBlock.ENABLED);
+        super.onEnabled();
+        var controller = getLinkedController();
+        if(controller != null)
+            controller.onProjectorEnabled(this);
     }
     
-    @Nullable
-    private ILinkingCard getLinker()
+    @Override
+    public void onDisabled()
     {
-        var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
-        var controllerLinker = ItemStackConvertor.getAs(controllerLinkerStack, ILinkingCard.class);
-        return controllerLinker;
+        super.onDisabled();
+        var controller = getLinkedController();
+        if(controller != null)
+            controller.onProjectorDisabled(this);
     }
     
-    private FieldControllerBlockEntity getController(boolean onlyIfChunkIsLoaded)
+    @Override
+    public void onControllerDisabled()
     {
-        var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
-        var controllerLinker = ItemStackConvertor.getAs(controllerLinkerStack, ILinkingCard.class);
-        if(controllerLinker == null)
-            return null;
-        return (controllerLinker == null ? null : controllerLinker.findLinkedController(controllerLinkerStack, level, onlyIfChunkIsLoaded));
+        var controller = getLinkedController();
+        if(controller != null && controller.isEnabled() == false)
+            requestToDestroyAllCreatedFields();
     }
     
-    private void link(@Nullable WorldLinks.LinkInfo connectionInfo)
+    @Override
+    public void onControllerEnabled()
     {
-        unlink();
-        if(level instanceof ServerLevel serverLevel)
-        {
-            linkedControllerInfo = connectionInfo;
-            if(connectionInfo != null)
-                WorldLinks.get(serverLevel).addLink(connectionInfo, worldPosition);
-        }
-    }
-    
-    private void unlink()
-    {
-        if(level instanceof ServerLevel serverLevel)
-        {
-            if(linkedControllerInfo != null)
-            {
-                WorldLinks.get(serverLevel).removeLink(linkedControllerInfo, worldPosition);
-                linkedControllerInfo = null;
-            }
-        }
+        var controller = getLinkedController();
+        if(controller != null && controller.isEnabled())
+            fieldsToDestroy.removeAll(fields.getFields(FieldSet.FieldState.Created, FieldSet.FieldState.Creating));
     }
     
     private void updateControllerFromLinker()
@@ -157,30 +142,71 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
             link(controllerLinker.getConnectionInfo(controllerLinkerStack));
     }
     
-    private void onInventoryContentChanged(int slot)
+    @Nullable
+    public FieldControllerBlockEntity getLinkedController()
     {
-        if(slot == SLOT_CONTROLLER_LINKER)
-            updateControllerFromLinker();
+        if(linkedControllerInfo == null)
+            return null;
+        if(level.getBlockEntity(linkedControllerInfo.blockPos) instanceof FieldControllerBlockEntity controller &&
+                controller.getUUID().equals(linkedControllerInfo.uuid))
+        {
+            return controller;
+        }
+        return null;
+    }
+    public boolean isMyController(FieldControllerBlockEntity controller)
+    {
+        return linkedControllerInfo != null && controller.getBlockPos().equals(linkedControllerInfo.blockPos) && controller.getUUID().equals(linkedControllerInfo.uuid);
     }
     
+    protected void link(@Nullable WorldLinks.LinkInfo connectionInfo)
+    {
+        unlink();
+        if(level instanceof ServerLevel serverLevel)
+        {
+            linkedControllerInfo = connectionInfo;
+            if(connectionInfo != null)
+                WorldLinks.get(serverLevel).addLink(connectionInfo, worldPosition);
+        }
+    }
     
+    protected void unlink()
+    {
+        if(level instanceof ServerLevel serverLevel)
+        {
+            if(linkedControllerInfo != null)
+            {
+                WorldLinks.get(serverLevel).removeLink(linkedControllerInfo, worldPosition);
+                linkedControllerInfo = null;
+            }
+        }
+    }
+    
+    @Override
     public void onDestroyed()
     {
+        super.onDestroyed();
+        dropInventory();
         unlink();
     }
     
     @Override
-    public Component getDisplayName()
+    protected BetterEnergyStorage getEnergyStorage()
     {
-        var id = ModBlocks.FIELD_PROJECTOR.getId();
-        return new TranslatableComponent("block." + id.getNamespace() + "." + id.getPath());
+        return energyStorage;
     }
     
-    @Nullable
     @Override
-    public AbstractContainerMenu createMenu(int pContainerId, Inventory pInventory, Player pPlayer)
+    public boolean isEnabled()
     {
-        return new FieldProjectorMenu(pContainerId, pInventory, this);
+        return getBlockState().getValue(FieldProjectorBlock.ENABLED);
+    }
+    
+    @Override
+    protected boolean canWork()
+    {
+        var controller = getLinkedController();
+        return isEnabled() && controller != null && controller.isEnabled();
     }
     
     @NotNull
@@ -236,61 +262,35 @@ public class FieldProjectorBlockEntity extends BlockEntity implements MenuProvid
         SimpleContainer inventory = new SimpleContainer(itemStackHandler.getSlots());
         for(int i = 0; i < itemStackHandler.getSlots(); i++)
             inventory.setItem(i, itemStackHandler.getStackInSlot(i));
-    
+        
         Containers.dropContents(level, worldPosition, inventory);
     }
     
-    @Override
-    public int getEnergyToBuildEnergyField(BlockPos blockPos)
+    public static void tick(Level level, BlockPos blockPos, BlockState blockState, FieldProjectorBlockEntity blockEntity)
     {
-        double distanceToBlockSqr = worldPosition.distSqr(blockPos);
-        if(distanceToBlockSqr <= 36)
-        {
-            return ENERGY_TO_BUILD;
-        }
-        else
-        {
-            var distance = Math.sqrt(distanceToBlockSqr);
-            return (int)(ENERGY_TO_BUILD * (distance - 5));
-        }
+        if(level instanceof ServerLevel serverLevel)
+            blockEntity.serverTick(serverLevel, blockPos, blockState);
+    }
+    
+    
+    @Override
+    public Component getDisplayName()
+    {
+        var id = ModBlocks.FIELD_PROJECTOR.getId();
+        return new TranslatableComponent("block." + id.getNamespace() + "." + id.getPath());
+    }
+    
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int pContainerId, Inventory pInventory, Player pPlayer)
+    {
+        return new FieldProjectorMenu(pContainerId, pInventory, this);
     }
     
     @Override
-    public int getEnergyToSupportEnergyField(BlockPos blockPos)
+    public void serverTick(ServerLevel level, BlockPos blockPos, BlockState blockState)
     {
-        double distanceToBlockSqr = worldPosition.distSqr(blockPos);
-        if(distanceToBlockSqr <= 36)
-        {
-            return ENERGY_TO_SUPPORT;
-        }
-        else
-        {
-            var distance = Math.sqrt(distanceToBlockSqr);
-            return (int)(ENERGY_TO_SUPPORT * (distance - 5));
-        }
-    }
-    
-    @Override
-    public boolean canBuildEnergyField(BlockPos blockPos)
-    {
-        return isEnabled() && energyStorage.getEnergyStored() > getEnergyToBuildEnergyField(blockPos);
-    }
-    
-    @Override
-    public boolean canSupportEnergyField(BlockPos blockPos)
-    {
-        return isEnabled() && energyStorage.getEnergyStored() > getEnergyToSupportEnergyField(blockPos);
-    }
-    
-    @Override
-    public void onBuiltEnergyField(BlockPos blockPos)
-    {
-        energyStorage.consumeEnergy(getEnergyToBuildEnergyField(blockPos), false);
-    }
-    
-    @Override
-    public void onSupportedEnergyField(BlockPos blockPos)
-    {
-        energyStorage.consumeEnergy(getEnergyToSupportEnergyField(blockPos), false);
+        super.serverTick(level, blockPos, blockState);
+        energyStorage.clearStats();
     }
 }

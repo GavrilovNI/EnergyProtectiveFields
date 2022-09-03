@@ -2,7 +2,9 @@ package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
-import me.doggy.energyprotectivefields.api.module.*;
+import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
@@ -20,8 +22,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -33,21 +33,18 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class FieldControllerBlockEntity extends BlockEntity implements MenuProvider, IFieldProjector, IHaveUUID, ILinkable
+public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntity implements IHaveUUID, ILinkable, MenuProvider
 {
-    
-    
-    public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
-    public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
-    
-    public static final int MAX_ENERGY_CAPACITY = 50000;
-    public static final int MAX_ENERGY_RECEIVE = 10000;
-    
-    public static final int ENERGY_TO_BUILD = 0;
-    public static final int ENERGY_TO_SUPPORT = 0;
+    public static final int ENERGY_STORAGE_DEFAULT_CAPACITY = 50000;
+    public static final int ENERGY_STORAGE_DEFAULT_RECEIVE = 10000;
     
     private UUID uuid;
-    private final Random random;
+    
+    private boolean hasEnergyInfinityModule;
+    
+    private final HashSet<IFieldProjector> fieldProjectors = new HashSet<>();
+    
+    private Set<BlockPos> shapePositions = new HashSet<>();
     
     private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
@@ -56,11 +53,14 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         {
             setChanged();
             if(level.isClientSide() == false)
+            {
                 updateShape();
+                //updateEnergyStorage();
+            }
         }
     };
-    
-    private final BetterEnergyStorage energyStorage = new BetterEnergyStorage(0, MAX_ENERGY_CAPACITY, MAX_ENERGY_RECEIVE, 0)
+    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(0, ENERGY_STORAGE_DEFAULT_CAPACITY,
+            ENERGY_STORAGE_DEFAULT_RECEIVE, 0)
     {
         @Override
         public void onChanged()
@@ -68,237 +68,63 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
             super.onChanged();
             setChanged();
         }
+        
+        @Override
+        public int consumeEnergy(int maxConsume, boolean simulate)
+        {
+            if(hasEnergyInfinityModule)
+            {
+                var oldEnergy = energy;
+                energy = Integer.MAX_VALUE;
+                var result = super.consumeEnergy(maxConsume, simulate);
+                energy = oldEnergy;
+                return result;
+            }
+            else
+            {
+                return super.consumeEnergy(maxConsume, simulate);
+            }
+        }
+        
+        @Override
+        public boolean consumeExact(int count)
+        {
+            if(hasEnergyInfinityModule)
+            {
+                var oldEnergy = energy;
+                energy = Integer.MAX_VALUE;
+                super.consumeExact(count);
+                energy = oldEnergy;
+                return true;
+            }
+            else
+            {
+                return super.consumeExact(count);
+            }
+        }
     };
     
     private LazyOptional<BetterEnergyStorage> lazyEnergyStorage = LazyOptional.empty();
     private LazyOptional<IItemHandler> lazyItemHandler = LazyOptional.empty();
-    
-    private final Set<IFieldProjector> fieldProjectors = new HashSet<>();
-    
-    private Set<BlockPos> shapePositions = new HashSet<>();
-    private final HashSet<BlockPos> createdFields = new HashSet<>();
-    private final HashSet<BlockPos> fieldsToRemove = new HashSet<>();
-    
-    private HashSet<BlockPos> notCreatedFields = new HashSet<>();
-    private HashSet<BlockPos> notCreatedTwiceFields = new HashSet<>();
     
     public FieldControllerBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
         super(ModBlockEntities.FIELD_CONTROLLER.get(), pWorldPosition, pBlockState);
         uuid = UUID.randomUUID();
         fieldProjectors.add(this);
-        random = new Random();
     }
     
-    @Override
-    public UUID getUUID()
+    
+    protected IFieldProjector getBestProjectorToBuild(BlockPos blockPos)
     {
-        return uuid;
-    }
-    
-    public boolean isEnabled()
-    {
-        return getBlockState().getValue(FieldControllerBlock.ENABLED);
-    }
-    
-    public void onDestroyed()
-    {
-        if(level.isClientSide())
-            return;
-        
-        removeAllCreatedFieldBlocksInstantly(); // TODO: should not remove instantly
-    }
-    
-    public void onFieldBlockDestroyed(BlockPos position)
-    {
-        if(level.isClientSide())
-            return;
-    
-        if(level.getBlockEntity(position) instanceof FieldBlockEntity fieldBlockEntity
-                && fieldBlockEntity.isMyController(this))
-            return;
-        
-        createdFields.remove(position);
-        if(shapePositions.contains(position))
-            notCreatedFields.add(position);
-        
-        fieldsToRemove.remove(position);
-    }
-    
-    public void onFieldBlockCreated(BlockPos position)
-    {
-        if(level.isClientSide())
-            return;
-        
-        if(level.getBlockEntity(position) instanceof FieldBlockEntity fieldBlockEntity && fieldBlockEntity.isMyController(this))
-        {
-            createdFields.add(position);
-            notCreatedFields.remove(position);
-            notCreatedTwiceFields.remove(position);
-    
-            if(shapePositions.contains(position) == false)
-                fieldsToRemove.add(position);
-        }
-    }
-    
-    private void updateShape()
-    {
-        IFieldShape fieldShape = itemStackHandler.getShape();
-        if(fieldShape != null)
-        {
-            var modules = itemStackHandler.getModulesInfo(IShapeModule.class);
-            ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
-            shapePositions = shapeBuilder.init().addFields(fieldShape).build();
-        }
-        else
-        {
-            shapePositions = new HashSet<>();
-        }
-    
-        fieldsToRemove.removeAll(shapePositions);
-        requestToRemoveAllFieldBlocksWhichNotInShape();
-        
-        notCreatedFields.addAll(shapePositions);
-        notCreatedFields.removeAll(createdFields);
-        notCreatedFields.removeAll(notCreatedTwiceFields);
-        //updateFieldBlockStatesFromWorldByShape();
-    }
-    
-    private boolean canBuildIn(BlockPos position)
-    {
-        return level.isEmptyBlock(position);
-    }
-    
-    private boolean isImpossibleToBuildIn(BlockPos position)
-    {
-        return level.isOutsideBuildHeight(position);
-    }
-    
-    private void initFieldBlock(BlockPos position)
-    {
-        FieldBlockEntity fieldBlockEntity = (FieldBlockEntity)level.getBlockEntity(position);
-        fieldBlockEntity.setControllerPosition(worldPosition);
-    }
-    
-    private void updateFieldBlockStatesFromWorldByShape()
-    {
-        for(var position : shapePositions)
-        {
-            if(level.getBlockEntity(position) instanceof FieldBlockEntity fieldBlockEntity &&
-                    fieldBlockEntity.isMyController(this))
-            {
-                createdFields.add(position);
-                notCreatedFields.remove(position);
-                notCreatedTwiceFields.remove(position);
-            }
-            else
-            {
-                notCreatedFields.add(position);
-                notCreatedTwiceFields.remove(position);
-                createdFields.remove(position);
-            }
-        }
-    }
-    
-    private void requestToRemoveAllCreatedFieldBlocks()
-    {
-        fieldsToRemove.addAll(createdFields);
-    }
-    
-    private void requestToRemoveAllFieldBlocksWhichNotInShape()
-    {
-        for(var position : createdFields)
-        {
-            if(shapePositions.contains(position) == false)
-                fieldsToRemove.add(position);
-        }
-        for(var position : notCreatedFields.stream().toList())
-        {
-            if(shapePositions.contains(position) == false)
-                notCreatedFields.remove(position);
-        }
-    
-        for(var position : notCreatedTwiceFields.stream().toList())
-        {
-            if(shapePositions.contains(position) == false)
-                notCreatedTwiceFields.remove(position);
-        }
-    }
-    
-    @Deprecated // you should not remove all field blocks instantly
-    private void removeAllCreatedFieldBlocksInstantly()
-    {
-        requestToRemoveAllCreatedFieldBlocks();
-        removeRequestedFields(fieldsToRemove.size());
-    }
-    
-    private void createFieldBlocks(int count)
-    {
-        if(notCreatedFields.isEmpty() && notCreatedTwiceFields.isEmpty() == false)
-        {
-            notCreatedFields = notCreatedTwiceFields;
-            notCreatedTwiceFields = new HashSet<>();
-        }
-        Set<BlockPos> justCreatedFields = new HashSet<>();
-        Set<BlockPos> fieldsToEraseFromSet = new HashSet<>();
-        
-        for(var position : notCreatedFields)
-        {
-            if(count <= 0)
-                break;
-            if(isImpossibleToBuildIn(position))
-            {
-                fieldsToEraseFromSet.add(position);
-                continue;
-            }
-            else
-            {
-                boolean created = false;
-                if(canBuildIn(position))
-                {
-                    IFieldProjector fieldProjector = getBestProjectorToBuild(position);
-                    if(fieldProjector != null)
-                    {
-                        fieldProjector.onBuiltEnergyField(position);
-                
-                        created = level.setBlock(position, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
-                        if(created)
-                        {
-                            justCreatedFields.add(position);
-                            count--;
-                        }
-                    }
-                }
-                if(created == false)
-                {
-                    fieldsToEraseFromSet.add(position);
-                    notCreatedTwiceFields.add(position);
-                }
-            }
-        }
-        
-        notCreatedFields.removeAll(fieldsToEraseFromSet);
-        for(var position : justCreatedFields)
-            initFieldBlock(position);
-    }
-    
-    private void removeRequestedFields(int count)
-    {
-        for(var position : fieldsToRemove.stream().limit(count).toList())
-            level.removeBlock(position, false);
-    }
-    
-    @Nullable
-    private IFieldProjector getBestProjectorToBuild(BlockPos blockPos)
-    {
-        IFieldProjector best = null;
+        IFieldProjector best = this;
         int minEnergy = -1;
         
         for(var projector : fieldProjectors)
         {
-            if(projector.canBuildEnergyField(blockPos))
+            if(projector.isEnabled() && projector != this)
             {
-                int energyToBuild = projector.getEnergyToBuildEnergyField(blockPos);
+                int energyToBuild = projector.getEnergyToBuildField(blockPos);
                 if(best == null || energyToBuild < minEnergy)
                 {
                     best = projector;
@@ -309,25 +135,181 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         return best;
     }
     
-    @Nullable
-    private IFieldProjector getBestProjectorToSupport(BlockPos blockPos)
+    protected void distributeField(BlockPos fieldPosition)
     {
-        IFieldProjector best = null;
-        int minEnergy = -1;
-        
-        for(var projector : fieldProjectors)
+        IFieldProjector projector = getBestProjectorToBuild(fieldPosition);
+        projector.addField(fieldPosition);
+    }
+    
+    protected void distributeFields(Set<BlockPos> fieldPositions)
+    {
+        for(var blockPos : fieldPositions)
+            distributeField(blockPos);
+    }
+    
+    protected void redistributeFieldsBetween(IFieldProjector from, IFieldProjector to)
+    {
+        var fields = from.getAllFields();
+        for(var blockPos : fields)
         {
-            if(projector.canSupportEnergyField(blockPos))
+            if(from.getEnergyToBuildField(blockPos) > to.getEnergyToBuildField(blockPos))
             {
-                int energyToSupport = projector.getEnergyToSupportEnergyField(blockPos);
-                if(best == null || energyToSupport < minEnergy)
-                {
-                    best = projector;
-                    minEnergy = energyToSupport;
-                }
+                from.removeField(blockPos);
+                to.addField(blockPos);
             }
         }
-        return best;
+    }
+    
+    protected void removeFieldsFromProjectors(Set<BlockPos> fieldPositions)
+    {
+        for(var projector : fieldProjectors)
+            projector.removeFields(fieldPositions);
+    }
+    
+    protected void removeAllFieldBlocksWhichNotInShapeFromProjectors()
+    {
+        for(var projector : fieldProjectors)
+            projector.removeFieldsIf(blockPos -> shapePositions.contains(blockPos) == false);
+    }
+    
+    protected void updateShape()
+    {
+        IFieldShape fieldShape = itemStackHandler.getShape();
+        if(fieldShape != null)
+        {
+            var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
+            ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
+            shapePositions = shapeBuilder.init().addFields(fieldShape).build();
+        }
+        else
+        {
+            shapePositions = new HashSet<>();
+        }
+        
+        removeAllFieldBlocksWhichNotInShapeFromProjectors();
+        HashSet<BlockPos> notDistributedFields = new HashSet<>(shapePositions);
+        clearFields();
+        for(var projector : fieldProjectors)
+            notDistributedFields.removeAll(projector.getAllFields());
+        
+        distributeFields(notDistributedFields);
+    }
+    
+    protected void updateFieldBlockStatesFromWorldByShape()
+    {
+        for(var blockPos : shapePositions)
+        {
+            if(level.getBlockEntity(blockPos) instanceof FieldBlockEntity fieldBlockEntity &&
+                    fieldProjectors.contains(fieldBlockEntity.getListener()))
+            {
+                distributeField(blockPos);
+            }
+        }
+    }
+    
+    protected void redistributeForNew(IFieldProjector fieldProjector)
+    {
+        fieldProjector.clearFields();
+        for(var otherProjector : fieldProjectors)
+        {
+            if(otherProjector == fieldProjector)
+                continue;
+            redistributeFieldsBetween(otherProjector, fieldProjector);
+        }
+    }
+    
+    /*protected void updateEnergyStorage()
+    {
+        var receiveModules = itemStackHandler.getModulesInfo(IEnergyReceiveExtensionModule.class);
+        int maxReceive = ENERGY_STORAGE_DEFAULT_RECEIVE;
+        for(var module : receiveModules)
+        {
+            var toAdd = module.getModule().getEnergyReceiveShift() * module.getCount();
+            maxReceive += Math.min(Integer.MAX_VALUE - maxReceive, toAdd);
+        }
+        this.energyStorage.setMaxReceive(maxReceive);
+        
+        var capacityModules = itemStackHandler.getModulesInfo(IEnergyCapacityExtensionModule.class);
+        int capacity = ENERGY_STORAGE_DEFAULT_CAPACITY;
+        for(var module : capacityModules)
+        {
+            var toAdd = module.getModule().getEnergyCapacityShift() * module.getCount();
+            capacity += Math.min(Integer.MAX_VALUE - capacity, toAdd);
+        }
+        this.energyStorage.setMaxEnergyStored(capacity);
+        
+        hasEnergyInfinityModule = itemStackHandler.getModulesInfo(CreativeEnergyModule.class).isEmpty() == false;
+        
+        if(hasEnergyInfinityModule)
+            this.energyStorage.setEnergyStored(this.energyStorage.getMaxEnergyStored());
+    }*/
+    
+    @Override
+    public UUID getUUID()
+    {
+        return uuid;
+    }
+    
+    public void dropInventory()
+    {
+        SimpleContainer inventory = new SimpleContainer(itemStackHandler.getSlots());
+        for(int i = 0; i < itemStackHandler.getSlots(); i++)
+            inventory.setItem(i, itemStackHandler.getStackInSlot(i));
+        
+        Containers.dropContents(level, worldPosition, inventory);
+    }
+    
+    @Override
+    public void onEnabled()
+    {
+        super.onEnabled();
+        for(var projector : fieldProjectors)
+            projector.onControllerEnabled();
+    }
+    
+    @Override
+    public void onDisabled()
+    {
+        super.onDisabled();
+        for(var projector : fieldProjectors)
+            projector.onControllerDisabled();
+    }
+    
+    @Override
+    public void onControllerEnabled()
+    {
+    
+    }
+    
+    @Override
+    public void onControllerDisabled()
+    {
+    
+    }
+    
+    @Override
+    protected boolean canWork()
+    {
+        return isEnabled();
+    }
+    
+    @Override
+    protected BetterEnergyStorage getEnergyStorage()
+    {
+        return energyStorage;
+    }
+    
+    @Override
+    public boolean isEnabled()
+    {
+        return getBlockState().getValue(FieldControllerBlock.ENABLED);
+    }
+    
+    @Override
+    public void onDestroyed()
+    {
+        super.onDestroyed();
+        dropInventory();
     }
     
     @Override
@@ -344,16 +326,28 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         return new FieldControllerMenu(pContainerId, pInventory, this);
     }
     
-    @NotNull
-    @Override
-    public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side)
+    public void onProjectorDisabled(IFieldProjector projector)
     {
-        if(cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
-            return lazyItemHandler.cast();
-        if(cap == CapabilityEnergy.ENERGY)
-            return lazyEnergyStorage.cast();
+        if(projector == this)
+            return;
         
-        return super.getCapability(cap, side);
+        if(fieldProjectors.contains(projector) == false)
+            throw new IllegalArgumentException("this controller and projector aren't linked");
+        
+        var fields = projector.getAllFields();
+        projector.clearFields();
+        distributeFields(fields);
+    }
+    
+    public void onProjectorEnabled(IFieldProjector projector)
+    {
+        if(projector == this)
+            return;
+        
+        if(fieldProjectors.contains(projector) == false)
+            throw new IllegalArgumentException("this controller and projector aren't linked");
+        
+        redistributeForNew(projector);
     }
     
     @Nullable
@@ -363,7 +357,7 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         super.onLoad();
         lazyItemHandler = LazyOptional.of(() -> itemStackHandler);
         lazyEnergyStorage = LazyOptional.of(() -> energyStorage);
-    
+        
         if(level.isClientSide() == false)
         {
             fieldProjectors.clear();
@@ -374,9 +368,23 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
                     fieldProjectors.add(fieldProjector);
             }
             
+            //updateEnergyStorage();
+            
             updateShape();
             updateFieldBlockStatesFromWorldByShape();
         }
+    }
+    
+    @NotNull
+    @Override
+    public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side)
+    {
+        if(cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY)
+            return lazyItemHandler.cast();
+        if(cap == CapabilityEnergy.ENERGY)
+            return lazyEnergyStorage.cast();
+        
+        return super.getCapability(cap, side);
     }
     
     @Override
@@ -390,10 +398,10 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void saveAdditional(CompoundTag pTag)
     {
+        super.saveAdditional(pTag);
         pTag.putUUID("uuid", uuid);
         pTag.put("inventory", itemStackHandler.serializeNBT());
         pTag.put("energy", energyStorage.serializeNBT());
-        super.saveAdditional(pTag);
     }
     
     @Override
@@ -405,113 +413,17 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
         super.load(pTag);
     }
     
-    public void dropInventory()
-    {
-        SimpleContainer inventory = new SimpleContainer(itemStackHandler.getSlots());
-        for(int i = 0; i < itemStackHandler.getSlots(); i++)
-            inventory.setItem(i, itemStackHandler.getStackInSlot(i));
-    
-        Containers.dropContents(level, worldPosition, inventory);
-    }
-    
-    public void onDisabled()
-    {
-        if(level.isClientSide() == false)
-            requestToRemoveAllCreatedFieldBlocks();
-    }
-    
-    public void onEnabled()
-    {
-    
-    }
-    
-    private void consumeEnergyForSupportingFields()
-    {
-        for(var position : createdFields)
-        {
-            IFieldProjector fieldProjector = getBestProjectorToSupport(position);
-            if(fieldProjector == null)
-            {
-                fieldsToRemove.add(position);
-                continue;
-            }
-            fieldProjector.onSupportedEnergyField(position);
-        }
-    }
-    
-    public static void tick(Level level, BlockPos blockPos, BlockState blockState, FieldControllerBlockEntity blockEntity)
-    {
-        if(level.isClientSide())
-            return;
-    
-        blockEntity.removeRequestedFields(MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK);
-        blockEntity.consumeEnergyForSupportingFields();
-        
-        if(blockEntity.isEnabled())
-            blockEntity.createFieldBlocks(MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK);
-    }
-    
-    @Override
-    public int getEnergyToBuildEnergyField(BlockPos blockPos)
-    {
-        double distanceToBlockSqr = worldPosition.distSqr(blockPos);
-        if(distanceToBlockSqr <= 25)
-        {
-            return ENERGY_TO_BUILD;
-        }
-        else
-        {
-            var distance = Math.sqrt(distanceToBlockSqr);
-            return (int)(ENERGY_TO_BUILD * (distance - 4));
-        }
-    }
-    
-    @Override
-    public int getEnergyToSupportEnergyField(BlockPos blockPos)
-    {
-        double distanceToBlockSqr = worldPosition.distSqr(blockPos);
-        if(distanceToBlockSqr <= 25)
-        {
-            return ENERGY_TO_SUPPORT;
-        }
-        else
-        {
-            var distance = Math.sqrt(distanceToBlockSqr);
-            return (int)(ENERGY_TO_SUPPORT * (distance - 4));
-        }
-    }
-    
-    @Override
-    public boolean canBuildEnergyField(BlockPos blockPos)
-    {
-        return isEnabled() && energyStorage.getEnergyStored() > getEnergyToBuildEnergyField(blockPos);
-    }
-    
-    @Override
-    public boolean canSupportEnergyField(BlockPos blockPos)
-    {
-        return isEnabled() && energyStorage.getEnergyStored() > getEnergyToSupportEnergyField(blockPos);
-    }
-    
-    @Override
-    public void onBuiltEnergyField(BlockPos blockPos)
-    {
-        energyStorage.consumeEnergy(getEnergyToBuildEnergyField(blockPos), false);
-    }
-    
-    @Override
-    public void onSupportedEnergyField(BlockPos blockPos)
-    {
-        energyStorage.consumeEnergy(getEnergyToSupportEnergyField(blockPos), false);
-    }
-    
     @Override
     public void onLinked(ServerLevel level, BlockPos blockPos)
     {
-        if(this.level == level)
+         if(this.level == level)
         {
             if(level.getBlockEntity(blockPos) instanceof IFieldProjector fieldProjector)
+            {
                 fieldProjectors.add(fieldProjector);
+                if(fieldProjector.isEnabled())
+                    redistributeForNew(fieldProjector);
+            }
         }
     }
     
@@ -519,6 +431,18 @@ public class FieldControllerBlockEntity extends BlockEntity implements MenuProvi
     public void onUnlinked(ServerLevel level, BlockPos blockPos)
     {
         if(level.getBlockEntity(blockPos) instanceof IFieldProjector fieldProjector)
+        {
             fieldProjectors.remove(fieldProjector);
+            var fields = fieldProjector.getAllFields();
+            distributeFields(fields);
+            fieldProjector.clearFields();
+        }
+    }
+    
+    @Override
+    public void serverTick(ServerLevel level, BlockPos blockPos, BlockState blockState)
+    {
+        super.serverTick(level, blockPos, blockState);
+        energyStorage.clearStats();
     }
 }

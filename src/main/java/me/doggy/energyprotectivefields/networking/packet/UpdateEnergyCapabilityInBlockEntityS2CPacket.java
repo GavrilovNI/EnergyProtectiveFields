@@ -1,7 +1,9 @@
 package me.doggy.energyprotectivefields.networking.packet;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
+import me.doggy.energyprotectivefields.api.INetSerializable;
 import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -18,18 +20,19 @@ public class UpdateEnergyCapabilityInBlockEntityS2CPacket
     private final BlockPos blockPos;
     private final ResourceLocation levelRegistryName;
     private final BetterEnergyStorage energyStorage;
-    
+    private final boolean withStats;
     
     private UpdateEnergyCapabilityInBlockEntityS2CPacket(ResourceLocation levelResourceLocation, BlockPos blockPos, BetterEnergyStorage energyStorage)
     {
         this.blockPos = blockPos;
         this.levelRegistryName = levelResourceLocation;
         this.energyStorage = energyStorage;
+        this.withStats = energyStorage instanceof BetterEnergyStorageWithStats;
     }
     
-    private UpdateEnergyCapabilityInBlockEntityS2CPacket(ResourceLocation levelRegistryName, BlockPos blockPos)
+    private UpdateEnergyCapabilityInBlockEntityS2CPacket(ResourceLocation levelRegistryName, BlockPos blockPos, boolean withStats)
     {
-        this(levelRegistryName, blockPos, new BetterEnergyStorage());
+        this(levelRegistryName, blockPos, withStats ? new BetterEnergyStorageWithStats() : new BetterEnergyStorage());
     }
     
     public UpdateEnergyCapabilityInBlockEntityS2CPacket(Level level, BlockPos blockPos, BetterEnergyStorage energyStorage)
@@ -39,7 +42,7 @@ public class UpdateEnergyCapabilityInBlockEntityS2CPacket
     
     public UpdateEnergyCapabilityInBlockEntityS2CPacket(FriendlyByteBuf buf)
     {
-        this(buf.readResourceLocation(), buf.readBlockPos());
+        this(buf.readResourceLocation(), buf.readBlockPos(), buf.readBoolean());
         energyStorage.deserializeNet(buf);
     }
     
@@ -47,6 +50,7 @@ public class UpdateEnergyCapabilityInBlockEntityS2CPacket
     {
         buf.writeResourceLocation(levelRegistryName);
         buf.writeBlockPos(blockPos);
+        buf.writeBoolean(withStats);
         energyStorage.serializeNet(buf);
     }
     

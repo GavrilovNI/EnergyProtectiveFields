@@ -1,4 +1,4 @@
-package me.doggy.energyprotectivefields;
+package me.doggy.energyprotectivefields.api;
 
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import me.doggy.energyprotectivefields.data.WorldLinks;

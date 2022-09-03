@@ -1,6 +1,6 @@
 package me.doggy.energyprotectivefields.item;
 
-import me.doggy.energyprotectivefields.ILinkingCard;
+import me.doggy.energyprotectivefields.api.ILinkingCard;
 import me.doggy.energyprotectivefields.api.BlockLocation;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import me.doggy.energyprotectivefields.data.WorldLinks;

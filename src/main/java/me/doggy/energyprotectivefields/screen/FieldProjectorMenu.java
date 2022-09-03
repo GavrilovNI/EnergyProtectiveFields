@@ -2,7 +2,6 @@ package me.doggy.energyprotectivefields.screen;
 
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
-import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import me.doggy.energyprotectivefields.block.entity.FieldProjectorBlockEntity;
 import me.doggy.energyprotectivefields.screen.slot.SlotItemHandlerWithNotifier;
 import net.minecraft.network.FriendlyByteBuf;

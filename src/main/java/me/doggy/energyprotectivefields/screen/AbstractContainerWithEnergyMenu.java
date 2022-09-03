@@ -36,7 +36,9 @@ public abstract class AbstractContainerWithEnergyMenu extends BaseItemInventoryM
     
     protected boolean isNeededToSave(IEnergyStorage energyStorage)
     {
-        return (sentStorage == null && energyStorage != null) || sentStorage.equals(energyStorage) == false;
+        if(energyStorage == null)
+            return false;
+        return sentStorage == null || sentStorage.equals(energyStorage) == false;
     }
     
     protected void sendEnergyDataToPlayer(IEnergyStorage energyStorage)

@@ -4,7 +4,7 @@ import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.InfinityEnergyGeneratorBlockEntity;
 import me.doggy.energyprotectivefields.networking.NetworkManager;
-import me.doggy.energyprotectivefields.networking.packet.TestEnergyGeneratorSetMaxExtractC2SPacket;
+import me.doggy.energyprotectivefields.networking.packet.InfinityEnergyGeneratorSetMaxExtractC2SPacket;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -36,7 +36,9 @@ public class InfinityEnergyGeneratorMenu extends AbstractContainerWithEnergyMenu
     public void setMaxEnergyExtract(int maxExtract)
     {
         if(level.isClientSide())
-            NetworkManager.sendToServer(new TestEnergyGeneratorSetMaxExtractC2SPacket(maxExtract, blockEntity.getBlockPos()));
+            NetworkManager.sendToServer(new InfinityEnergyGeneratorSetMaxExtractC2SPacket(containerId, maxExtract));
+        else
+            blockEntity.setMaxEnergyExtract(maxExtract);
     }
     
     @Override

@@ -1,5 +1,7 @@
 package me.doggy.energyprotectivefields.block.entity;
 
+import me.doggy.energyprotectivefields.api.IFieldProjector;
+import me.doggy.energyprotectivefields.api.IFieldStateListener;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -10,60 +12,69 @@ import org.jetbrains.annotations.Nullable;
 
 public class FieldBlockEntity extends BlockEntity
 {
-    private BlockPos controllerPosition = null;
+    private BlockPos projectorPosition = null;
     
     public FieldBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
         super(ModBlockEntities.FIELD_BLOCK.get(), pWorldPosition, pBlockState);
     }
     
-    public void setControllerPosition(BlockPos position)
+    public void setProjectorPosition(@Nullable BlockPos blockPos)
     {
-        var oldController = getController();
-        controllerPosition = position;
-        var newController = getController();
-        if(oldController != newController)
+        var oldProjector = getProjectorIfChunkIsLoaded();
+        projectorPosition = blockPos;
+        var newProjector = getProjectorIfChunkIsLoaded();
+        if(oldProjector != newProjector)
         {
-            if(oldController != null)
-                oldController.onFieldBlockDestroyed(getBlockPos());
-            if(newController != null)
-                newController.onFieldBlockCreated(getBlockPos());
+            if(oldProjector != null)
+                oldProjector.onFieldDestroyed(this);
+            if(newProjector != null)
+                newProjector.onFieldCreated(this);
         }
     }
     
-    public boolean isMyController(FieldControllerBlockEntity fieldControllerBlockEntity)
+    
+    
+    public <T extends BlockEntity> boolean isMyProjector(T projector)
     {
-        if(controllerPosition == null)
+        if(projectorPosition == null)
             return false;
-        return fieldControllerBlockEntity.getLevel().equals(getLevel()) &&
-                fieldControllerBlockEntity.getBlockPos().equals(controllerPosition);
+        return projector instanceof IFieldProjector &&
+                projector.getLevel().equals(getLevel()) &&
+                projector.getBlockPos().equals(projectorPosition);
     }
     
     @Nullable
-    public BlockPos getControllerPosition()
+    public IFieldProjector getProjectorIfChunkIsLoaded()
     {
-        return controllerPosition;
-    }
-    
-    @Nullable
-    public FieldControllerBlockEntity getController()
-    {
-        if(controllerPosition == null)
+        if(projectorPosition == null)
             return null;
-        if(level.hasChunk(SectionPos.blockToSectionCoord(controllerPosition.getX()), SectionPos.blockToSectionCoord(controllerPosition.getZ())))
+        if(level.hasChunk(SectionPos.blockToSectionCoord(projectorPosition.getX()), SectionPos.blockToSectionCoord(projectorPosition.getZ())))
         {
-            var blockEntity = level.getBlockEntity(controllerPosition);
-            if(blockEntity instanceof FieldControllerBlockEntity fieldControllerBlockEntity)
-                return fieldControllerBlockEntity;
+            var blockEntity = level.getBlockEntity(projectorPosition);
+            if(isMyProjector(blockEntity))
+                return (IFieldProjector)blockEntity;
             else
-                onLostController();
+                onLostProjector();
         }
         return null;
     }
     
-    private void onLostController()
+    @Nullable
+    public IFieldStateListener getListener()
     {
-        controllerPosition = null;
+        if(projectorPosition == null)
+            return null;
+        if(level.getBlockEntity(projectorPosition) instanceof IFieldStateListener projector)
+            return projector;
+        else
+            onLostProjector();
+        return null;
+    }
+    
+    protected void onLostProjector()
+    {
+        projectorPosition = null;
         level.removeBlock(getBlockPos(), false);
     }
     
@@ -72,18 +83,18 @@ public class FieldBlockEntity extends BlockEntity
     public void onLoad()
     {
         super.onLoad();
-        var controller = getController();
-        if(controller != null)
-            controller.onFieldBlockCreated(getBlockPos());
+        var projector = getListener();
+        if(projector != null)
+            projector.onFieldCreated(this);
     }
     
     @Override
     public void setRemoved()
     {
-        var controller = getController();
-        if(controller != null)
-            controller.onFieldBlockDestroyed(getBlockPos());
         super.setRemoved();
+        var projector = getListener();
+        if(projector != null)
+            projector.onFieldDestroyed(this);
     }
     
     @Override
@@ -91,8 +102,8 @@ public class FieldBlockEntity extends BlockEntity
     {
         super.saveAdditional(pTag);
         
-        if(controllerPosition != null)
-            pTag.put("controller-pos", NbtUtils.writeBlockPos(controllerPosition));
+        if(projectorPosition != null)
+            pTag.put("projector-pos", NbtUtils.writeBlockPos(projectorPosition));
     }
     
     @Override
@@ -100,10 +111,10 @@ public class FieldBlockEntity extends BlockEntity
     {
         super.load(pTag);
         
-        if(pTag.contains("controller-pos"))
-            controllerPosition = NbtUtils.readBlockPos(pTag.getCompound("controller-pos"));
+        if(pTag.contains("projector-pos"))
+            projectorPosition = NbtUtils.readBlockPos(pTag.getCompound("projector-pos"));
         else
-            controllerPosition = null;
+            projectorPosition = null;
     }
     
 }

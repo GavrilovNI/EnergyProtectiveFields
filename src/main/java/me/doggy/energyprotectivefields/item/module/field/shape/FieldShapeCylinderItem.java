@@ -1,7 +1,7 @@
-package me.doggy.energyprotectivefields.item.module.shape;
+package me.doggy.energyprotectivefields.item.module.field.shape;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
-import me.doggy.energyprotectivefields.api.module.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.utils.Math3D;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;

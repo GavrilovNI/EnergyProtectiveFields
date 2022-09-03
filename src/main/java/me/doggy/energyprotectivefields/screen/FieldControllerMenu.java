@@ -1,8 +1,8 @@
 package me.doggy.energyprotectivefields.screen;
 
-import me.doggy.energyprotectivefields.api.module.IDirectionalShapeModule;
-import me.doggy.energyprotectivefields.api.module.IFieldShape;
-import me.doggy.energyprotectivefields.api.module.IShapeModule;
+import me.doggy.energyprotectivefields.api.module.IModule;
+import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
@@ -36,30 +36,30 @@ public class FieldControllerMenu extends AbstractContainerWithEnergyMenu
             int index = 0;
             this.addSlot(new ModuleSlot(itemHandler, index++, 62, 43, IFieldShape.class));
     
-            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 16, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 53, 16, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 71, 16, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 16, IDirectionalShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 16, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 53, 16, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 71, 16, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 16, IDirectionalFieldModule.class));
             
-            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 34, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 34, IDirectionalShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 34, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 34, IDirectionalFieldModule.class));
             
-            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 52, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 52, IDirectionalShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 52, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 52, IDirectionalFieldModule.class));
             
-            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 70, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 53, 70, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 71, 70, IDirectionalShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 70, IDirectionalShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 35, 70, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 53, 70, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 71, 70, IDirectionalFieldModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 89, 70, IDirectionalFieldModule.class));
     
     
-            this.addSlot(new ModuleSlot(itemHandler, index++, 116, 34, IShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 134, 34, IShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 152, 34, IShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 116, 34, IModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 134, 34, IModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 152, 34, IModule.class));
     
-            this.addSlot(new ModuleSlot(itemHandler, index++, 116, 52, IShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 134, 52, IShapeModule.class));
-            this.addSlot(new ModuleSlot(itemHandler, index++, 152, 52, IShapeModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 116, 52, IModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 134, 52, IModule.class));
+            this.addSlot(new ModuleSlot(itemHandler, index++, 152, 52, IModule.class));
         });
     }
     

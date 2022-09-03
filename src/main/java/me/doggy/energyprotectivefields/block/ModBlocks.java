@@ -24,7 +24,7 @@ public class ModBlocks
 {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, EnergyProtectiveFields.MOD_ID);
     
-    public static final RegistryObject<Block> FIELD_BLOCK = registerBlockWithItem("field_block",
+    public static final RegistryObject<FieldBlock> FIELD_BLOCK = registerBlockWithItem("field_block",
             () -> new FieldBlock(BlockBehaviour.Properties.of(Material.BARRIER)
                     .strength(-1.0F, 3600000.0F)
                     .noDrops()
@@ -38,18 +38,18 @@ public class ModBlocks
             ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
             );
     
-    public static final RegistryObject<Block> FIELD_CONTROLLER = registerBlockWithItem("field_controller",
-            () -> new FieldControllerBlock(BlockBehaviour.Properties.of(Material.STONE)),
-            ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
-    );
-    
-    public static final RegistryObject<Block> INFINITY_ENERGY_GENERATOR = registerBlockWithItem("infinity_energy_generator",
+    public static final RegistryObject<InfinityEnergyGeneratorBlock> INFINITY_ENERGY_GENERATOR = registerBlockWithItem("infinity_energy_generator",
             () -> new InfinityEnergyGeneratorBlock(BlockBehaviour.Properties.of(Material.STONE)),
             ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
     );
     
-    public static final RegistryObject<Block> FIELD_PROJECTOR = registerBlockWithItem("field_projector",
-            () -> new FieldProjector(BlockBehaviour.Properties.of(Material.STONE)),
+    public static final RegistryObject<FieldControllerBlock> FIELD_CONTROLLER = registerBlockWithItem("field_controller",
+            () -> new FieldControllerBlock(BlockBehaviour.Properties.of(Material.STONE)),
+            ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
+    );
+    
+    public static final RegistryObject<FieldProjectorBlock> FIELD_PROJECTOR = registerBlockWithItem("field_projector",
+            () -> new FieldProjectorBlock(BlockBehaviour.Properties.of(Material.STONE)),
             ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB
     );
     

@@ -1,7 +1,7 @@
 package me.doggy.energyprotectivefields.networking;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
-import me.doggy.energyprotectivefields.networking.packet.TestEnergyGeneratorSetMaxExtractC2SPacket;
+import me.doggy.energyprotectivefields.networking.packet.InfinityEnergyGeneratorSetMaxExtractC2SPacket;
 import me.doggy.energyprotectivefields.networking.packet.UpdateEnergyCapabilityInBlockEntityS2CPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -62,10 +62,10 @@ public class NetworkManager
                 .consumer(UpdateEnergyCapabilityInBlockEntityS2CPacket::handle)
                 .add();
     
-        INSTANCE.messageBuilder(TestEnergyGeneratorSetMaxExtractC2SPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
-                .decoder(TestEnergyGeneratorSetMaxExtractC2SPacket::new)
-                .encoder(TestEnergyGeneratorSetMaxExtractC2SPacket::toBytes)
-                .consumer(TestEnergyGeneratorSetMaxExtractC2SPacket::handle)
+        INSTANCE.messageBuilder(InfinityEnergyGeneratorSetMaxExtractC2SPacket.class, 1, NetworkDirection.PLAY_TO_SERVER)
+                .decoder(InfinityEnergyGeneratorSetMaxExtractC2SPacket::new)
+                .encoder(InfinityEnergyGeneratorSetMaxExtractC2SPacket::toBytes)
+                .consumer(InfinityEnergyGeneratorSetMaxExtractC2SPacket::handle)
                 .add();
     }
 }

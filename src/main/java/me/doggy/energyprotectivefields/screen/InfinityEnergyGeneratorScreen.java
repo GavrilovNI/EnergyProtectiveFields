@@ -36,20 +36,23 @@ public class InfinityEnergyGeneratorScreen extends BaseScreen<InfinityEnergyGene
                 return false;
             }
         });
-        maxExtractEditBox.setFormatter((p_94147_, p_94148_) -> {
-            return FormattedCharSequence.forward(p_94147_, Style.EMPTY);
-        });
         this.addRenderableWidget(maxExtractEditBox);
-        this.addRenderableWidget(new Button(maxExtractEditBox.x + maxExtractEditBox.getWidth() + 2,
+        var setButton = new Button(maxExtractEditBox.x + maxExtractEditBox.getWidth() + 2,
                 maxExtractEditBox.y, maxExtractEditBox.getHeight(), maxExtractEditBox.getHeight(), new TextComponent("set"),
                 (button) -> {
-            String valueString = maxExtractEditBox.getValue();
-            int maxExtract = 0;
-            if(valueString.isEmpty() == false)
-                maxExtract = Integer.parseInt(maxExtractEditBox.getValue());
+                    String valueString = maxExtractEditBox.getValue();
+                    int maxExtract = 0;
+                    if(valueString.isEmpty() == false)
+                        maxExtract = Integer.parseInt(maxExtractEditBox.getValue());
             
-            this.menu.setMaxEnergyExtract(maxExtract);
-        }));
+                    this.menu.setMaxEnergyExtract(maxExtract);
+                });
+        this.addRenderableWidget(setButton);
+        this.addRenderableWidget(new Button(setButton.x + setButton.getWidth() + 2,
+                setButton.y, setButton.getWidth(), setButton.getHeight(), new TextComponent("max"),
+                (button) -> {
+                    this.menu.setMaxEnergyExtract(Integer.MAX_VALUE);
+                }));
     }
     
     @Override

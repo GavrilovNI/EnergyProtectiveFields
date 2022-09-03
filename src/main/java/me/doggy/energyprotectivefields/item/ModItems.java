@@ -2,10 +2,16 @@ package me.doggy.energyprotectivefields.item;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.ModCreativeModeTab;
-import me.doggy.energyprotectivefields.item.module.*;
-import me.doggy.energyprotectivefields.item.module.shape.FieldShapeCubeItem;
-import me.doggy.energyprotectivefields.item.module.shape.FieldShapeCylinderItem;
-import me.doggy.energyprotectivefields.item.module.shape.FieldShapeSphereItem;
+import me.doggy.energyprotectivefields.item.module.energy.CreativeEnergyModule;
+import me.doggy.energyprotectivefields.item.module.energy.EnergyCapacityExtensionModule;
+import me.doggy.energyprotectivefields.item.module.energy.EnergyReceiveExtensionModule;
+import me.doggy.energyprotectivefields.item.module.field.DomeModuleItem;
+import me.doggy.energyprotectivefields.item.module.field.MoveModuleItem;
+import me.doggy.energyprotectivefields.item.module.field.SizeUpgradeItem;
+import me.doggy.energyprotectivefields.item.module.field.StrengthUpgradeItem;
+import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeCubeItem;
+import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeCylinderItem;
+import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeSphereItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -46,6 +52,18 @@ public class ModItems
     
     public static final RegistryObject<Item> MOVE_MODULE = ITEMS.register("move_module", () ->
             new MoveModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    public static final RegistryObject<Item> ENERGY_RECEIVE_UPGRADE = ITEMS.register("energy_receive_upgrade", () ->
+            new EnergyReceiveExtensionModule(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB), 20000)
+    );
+    
+    public static final RegistryObject<Item> ENERGY_CAPACITY_UPGRADE = ITEMS.register("energy_capacity_upgrade", () ->
+            new EnergyCapacityExtensionModule(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB), 20000)
+    );
+    
+    public static final RegistryObject<Item> CREATIVE_ENERGY_MODULE = ITEMS.register("creative_energy_module", () ->
+            new CreativeEnergyModule(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

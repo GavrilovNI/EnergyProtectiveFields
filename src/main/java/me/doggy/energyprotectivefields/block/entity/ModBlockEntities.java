@@ -1,7 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
-import me.doggy.energyprotectivefields.block.FieldProjector;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -18,14 +17,14 @@ public class ModBlockEntities
     public static final RegistryObject<BlockEntityType<FieldBlockEntity>> FIELD_BLOCK =
             BLOCK_ENTITIES.register("field_block", () -> BlockEntityType.Builder.of(FieldBlockEntity::new,
                     ModBlocks.FIELD_BLOCK.get()).build(null));
-    
-    public static final RegistryObject<BlockEntityType<FieldControllerBlockEntity>> FIELD_CONTROLLER =
-            BLOCK_ENTITIES.register("field_controller", () -> BlockEntityType.Builder.of(FieldControllerBlockEntity::new,
-            ModBlocks.FIELD_CONTROLLER.get()).build(null));
 
     public static final RegistryObject<BlockEntityType<InfinityEnergyGeneratorBlockEntity>> INFINITY_ENERGY_GENERATOR =
             BLOCK_ENTITIES.register("infinity_energy_generator", () -> BlockEntityType.Builder.of(InfinityEnergyGeneratorBlockEntity::new,
                     ModBlocks.INFINITY_ENERGY_GENERATOR.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<FieldControllerBlockEntity>> FIELD_CONTROLLER =
+            BLOCK_ENTITIES.register("field_controller", () -> BlockEntityType.Builder.of(FieldControllerBlockEntity::new,
+                    ModBlocks.FIELD_CONTROLLER.get()).build(null));
     
     public static final RegistryObject<BlockEntityType<FieldProjectorBlockEntity>> FIELD_PROJECTOR =
             BLOCK_ENTITIES.register("field_projector", () -> BlockEntityType.Builder.of(FieldProjectorBlockEntity::new,

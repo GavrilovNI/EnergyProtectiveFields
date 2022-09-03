@@ -1,10 +1,10 @@
-package me.doggy.energyprotectivefields.api.module;
+package me.doggy.energyprotectivefields.api.module.field;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import net.minecraft.world.item.ItemStack;
 
-public interface IFieldShape extends IShapeModule
+public interface IFieldShape extends IFieldModule
 {
     void addFields(ShapeBuilder shapeBuilder);
     

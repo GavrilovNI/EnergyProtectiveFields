@@ -1,9 +1,8 @@
 package me.doggy.energyprotectivefields.api;
 
-import me.doggy.energyprotectivefields.api.module.IFieldShape;
-import me.doggy.energyprotectivefields.api.module.IFieldShapeChanger;
-import me.doggy.energyprotectivefields.api.module.IModule;
-import me.doggy.energyprotectivefields.api.module.IShapeModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShapeChanger;
+import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -16,13 +15,13 @@ public class ShapeBuilder
     private final HashSet<BlockPos> positions = new HashSet<>();
     
     private final FieldControllerBlockEntity controller;
-    private final Collection<ModuleInfo<IShapeModule>> modules;
+    private final Collection<ModuleInfo<IFieldModule>> modules;
     
     private final HashMap<Direction, Integer> sizes = new HashMap<>();
     private BlockPos center;
     private int strength;
     
-    public ShapeBuilder(FieldControllerBlockEntity controller, Collection<ModuleInfo<IShapeModule>> modules)
+    public ShapeBuilder(FieldControllerBlockEntity controller, Collection<ModuleInfo<IFieldModule>> modules)
     {
         this.controller = controller;
         this.modules = modules;

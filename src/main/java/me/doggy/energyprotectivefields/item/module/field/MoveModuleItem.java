@@ -1,8 +1,8 @@
-package me.doggy.energyprotectivefields.item.module;
+package me.doggy.energyprotectivefields.item.module.field;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
-import me.doggy.energyprotectivefields.api.module.IFieldMover;
+import me.doggy.energyprotectivefields.api.module.field.IFieldMover;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.Item;
 

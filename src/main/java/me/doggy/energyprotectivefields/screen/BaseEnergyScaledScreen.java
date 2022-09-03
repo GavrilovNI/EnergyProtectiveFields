@@ -1,16 +1,23 @@
 package me.doggy.energyprotectivefields.screen;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraftforge.energy.IEnergyStorage;
+import org.apache.commons.lang3.CharSequenceUtils;
+
+import java.util.ArrayList;
+import java.util.Optional;
 
 public class BaseEnergyScaledScreen<T extends AbstractContainerWithEnergyMenu> extends BaseScreen<T>
 {
     protected int energyScaleStartX = 8;
     protected int energyScaleStartY = 16;
-    protected int energyScaleFillerStartX = 176;
+    protected int energyScaleFillerStartX;
     protected int energyScaleFillerStartY = 0;
     protected int energyScaleWidth = 16;
     protected int energyScaleHeight = 60;
@@ -32,7 +39,22 @@ public class BaseEnergyScaledScreen<T extends AbstractContainerWithEnergyMenu> e
         if (this.menu.getCarried().isEmpty() && isHoveringEnergy)
         {
             IEnergyStorage energyStorage = this.menu.getEnergyStorage();
-            renderTooltip(pPoseStack, new TextComponent("Energy: " + energyStorage.getEnergyStored() + "/" + energyStorage.getMaxEnergyStored()), pX, pY);
+            ArrayList<Component> lines = new ArrayList<>();
+            var energyPercent = String.format("%.2f", getEnergyPercent() * 100);
+            lines.add(new TextComponent("Energy: " + energyStorage.getEnergyStored() + "/" + energyStorage.getMaxEnergyStored() + " (" + energyPercent + "%)"));
+            if(energyStorage instanceof BetterEnergyStorage betterEnergyStorage)
+            {
+                lines.add(new TextComponent("Max extract: " + betterEnergyStorage.getMaxExtract()));
+                lines.add(new TextComponent("Max receive: " + betterEnergyStorage.getMaxReceive()));
+            }
+            if(energyStorage instanceof BetterEnergyStorageWithStats stats)
+            {
+                lines.add(new TextComponent("Receive: " + stats.getReceivedEnergy()));
+                lines.add(new TextComponent("Extract: " + stats.getExtractedEnergy()));
+                lines.add(new TextComponent("Produce: " + stats.getProducedEnergy()));
+                lines.add(new TextComponent("Consume: " + stats.getConsumedEnergy()));
+            }
+            renderTooltip(pPoseStack, lines, Optional.empty(), pX, pY);
         }
         
     }

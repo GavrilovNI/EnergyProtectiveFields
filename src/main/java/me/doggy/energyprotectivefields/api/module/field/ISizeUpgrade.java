@@ -1,10 +1,10 @@
-package me.doggy.energyprotectivefields.api.module;
+package me.doggy.energyprotectivefields.api.module.field;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import net.minecraft.core.Direction;
 
-public interface ISizeUpgrade extends IDirectionalShapeModule
+public interface ISizeUpgrade extends IDirectionalFieldModule
 {
     int getSizeMultiplier();
     

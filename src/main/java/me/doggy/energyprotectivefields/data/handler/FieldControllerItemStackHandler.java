@@ -1,10 +1,10 @@
 package me.doggy.energyprotectivefields.data.handler;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
-import me.doggy.energyprotectivefields.api.module.IDirectionalShapeModule;
-import me.doggy.energyprotectivefields.api.module.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.IModule;
-import me.doggy.energyprotectivefields.api.module.IShapeModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -51,13 +51,13 @@ public class FieldControllerItemStackHandler extends ItemStackHandler
         if(itemStack.isEmpty())
             return true;
         
-        Class<? extends IShapeModule> classNeeded;
+        Class<? extends IModule> classNeeded;
         if(isShapeSlot(slot))
             classNeeded = IFieldShape.class;
         else if(isDirectionalSlot(slot))
-            classNeeded = IDirectionalShapeModule.class;
+            classNeeded = IDirectionalFieldModule.class;
         else if(isOtherSlot(slot))
-            classNeeded = IShapeModule.class;
+            classNeeded = IModule.class;
         else
             return false;
         
@@ -66,7 +66,7 @@ public class FieldControllerItemStackHandler extends ItemStackHandler
     
     private Optional<Integer> tryFindLimit(ItemStack itemStack)
     {
-        IShapeModule module = ItemStackConvertor.getAs(itemStack, IShapeModule.class);
+        IFieldModule module = ItemStackConvertor.getAs(itemStack, IFieldModule.class);
         if(module != null)
             return Optional.of(module.getLimitInControllerSlot(itemStack));
         return Optional.empty();

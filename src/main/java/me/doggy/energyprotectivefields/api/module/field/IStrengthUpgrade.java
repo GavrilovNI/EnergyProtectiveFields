@@ -1,9 +1,9 @@
-package me.doggy.energyprotectivefields.api.module;
+package me.doggy.energyprotectivefields.api.module.field;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 
-public interface IStrengthUpgrade extends IShapeModule
+public interface IStrengthUpgrade extends IFieldModule
 {
     int getStrengthMultiplier();
     

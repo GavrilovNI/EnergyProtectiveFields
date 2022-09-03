@@ -1,15 +1,29 @@
 package me.doggy.energyprotectivefields.api;
 
+import me.doggy.energyprotectivefields.block.entity.FieldBlockEntity;
 import net.minecraft.core.BlockPos;
 
-public interface IFieldProjector
+import java.util.Collection;
+import java.util.Set;
+import java.util.function.Predicate;
+
+public interface IFieldProjector extends IFieldStateListener
 {
-    int getEnergyToBuildEnergyField(BlockPos blockPos);
-    int getEnergyToSupportEnergyField(BlockPos blockPos);
+    boolean isEnabled();
     
-    boolean canBuildEnergyField(BlockPos blockPos);
-    boolean canSupportEnergyField(BlockPos blockPos);
+    int getEnergyToBuildField(BlockPos blockPos);
+    int getEnergyToSupportField(BlockPos blockPos);
     
-    void onBuiltEnergyField(BlockPos blockPos);
-    void onSupportedEnergyField(BlockPos blockPos);
+    void clearFields();
+    void addField(BlockPos blockPos);
+    void removeField(BlockPos blockPos);
+    
+    void removeFields(Collection<BlockPos> positions);
+    void retainFields(Collection<BlockPos> positions);
+    void removeFieldsIf(Predicate<BlockPos> predicate);
+    
+    void onControllerEnabled();
+    void onControllerDisabled();
+    
+    Set<BlockPos> getAllFields();
 }
