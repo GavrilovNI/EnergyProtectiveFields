@@ -4,7 +4,7 @@ import net.minecraft.world.item.ItemStack;
 
 public interface IModule
 {
-    default int getLimitInControllerSlot(ItemStack itemStack)
+    default int getLimitInMachineSlot(ItemStack itemStack)
     {
         return itemStack.getMaxStackSize();
     }

@@ -5,12 +5,12 @@ import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 
-public interface IFieldShapeChanger extends IFieldModule
+public interface IFieldShapeValidator extends IFieldModule
 {
     boolean isInShape(ShapeBuilder shapeBuilder, BlockPos fieldPosition);
     
     @Override
-    default int getLimitInControllerSlot(ItemStack itemStack)
+    default int getLimitInMachineSlot(ItemStack itemStack)
     {
         return 1;
     }

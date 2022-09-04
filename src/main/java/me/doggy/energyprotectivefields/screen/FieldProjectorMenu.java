@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.screen;
 
+import me.doggy.energyprotectivefields.api.ILinkingCard;
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
@@ -32,7 +33,7 @@ public class FieldProjectorMenu extends AbstractContainerWithEnergyMenu
         
         this.blockEntity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY).ifPresent(itemHandler -> {
             int i = 0;
-            this.addSlot(new SlotItemHandlerWithNotifier(itemHandler, i++, 80, 36));
+            this.addSlot(new ModuleSlot(itemHandler, i++, 80, 36, ILinkingCard.class));
             this.addSlot(new ModuleSlot(itemHandler, i++, 152, 18, IEnergyModule.class));
             this.addSlot(new ModuleSlot(itemHandler, i++, 152, 36, IEnergyModule.class));
             this.addSlot(new ModuleSlot(itemHandler, i++, 152, 54, IEnergyModule.class));

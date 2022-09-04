@@ -34,7 +34,7 @@ public class ModuleSlot<T extends IModule> extends SlotItemHandlerWithNotifier
     {
         T module = InventoryHelper.getStackAs(pStack, clazz);
         if(module != null)
-            return Math.min(module.getLimitInControllerSlot(pStack), super.getMaxStackSize(pStack));
+            return Math.min(module.getLimitInMachineSlot(pStack), super.getMaxStackSize(pStack));
         return super.getMaxStackSize(pStack);
     }
 }

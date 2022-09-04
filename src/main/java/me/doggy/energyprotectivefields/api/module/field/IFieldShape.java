@@ -9,7 +9,7 @@ public interface IFieldShape extends IFieldModule
     void addFields(ShapeBuilder shapeBuilder);
     
     @Override
-    default int getLimitInControllerSlot(ItemStack itemStack)
+    default int getLimitInMachineSlot(ItemStack itemStack)
     {
         return 1;
     }

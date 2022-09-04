@@ -5,10 +5,7 @@ import me.doggy.energyprotectivefields.ModCreativeModeTab;
 import me.doggy.energyprotectivefields.item.module.energy.CreativeEnergyModule;
 import me.doggy.energyprotectivefields.item.module.energy.EnergyCapacityExtensionModule;
 import me.doggy.energyprotectivefields.item.module.energy.EnergyReceiveExtensionModule;
-import me.doggy.energyprotectivefields.item.module.field.DomeModuleItem;
-import me.doggy.energyprotectivefields.item.module.field.MoveModuleItem;
-import me.doggy.energyprotectivefields.item.module.field.SizeUpgradeItem;
-import me.doggy.energyprotectivefields.item.module.field.StrengthUpgradeItem;
+import me.doggy.energyprotectivefields.item.module.field.*;
 import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeCubeItem;
 import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeCylinderItem;
 import me.doggy.energyprotectivefields.item.module.field.shape.FieldShapeSphereItem;
@@ -64,6 +61,11 @@ public class ModItems
     
     public static final RegistryObject<Item> CREATIVE_ENERGY_MODULE = ITEMS.register("creative_energy_module", () ->
             new CreativeEnergyModule(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    
+    public static final RegistryObject<Item> ROTATION_MODULE = ITEMS.register("rotation_module", () ->
+            new RotationModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

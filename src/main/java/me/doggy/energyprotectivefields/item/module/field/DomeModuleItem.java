@@ -1,11 +1,11 @@
 package me.doggy.energyprotectivefields.item.module.field;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
-import me.doggy.energyprotectivefields.api.module.field.IFieldShapeChanger;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShapeValidator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.Item;
 
-public class DomeModuleItem extends Item implements IFieldShapeChanger
+public class DomeModuleItem extends Item implements IFieldShapeValidator
 {
     public DomeModuleItem(Properties pProperties)
     {

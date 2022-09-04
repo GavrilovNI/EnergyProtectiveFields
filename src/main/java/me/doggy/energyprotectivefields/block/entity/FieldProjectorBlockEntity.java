@@ -4,7 +4,12 @@ import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ILinkingCard;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.capability.item.ModulesItemStackHandler;
+import me.doggy.energyprotectivefields.api.module.IModule;
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
+import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
+import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import me.doggy.energyprotectivefields.block.FieldProjectorBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
@@ -34,6 +39,8 @@ import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Optional;
+
 public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity implements MenuProvider
 {
     public static final int SLOT_CONTROLLER_LINKER = 0;
@@ -43,7 +50,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     
     private WorldLinks.LinkInfo linkedControllerInfo = null;
     
-    private final ItemStackHandler itemStackHandler = new ItemStackHandler(ITEM_CAPABILITY_SIZE)
+    private final ModulesItemStackHandler itemStackHandler = new ModulesItemStackHandler(ITEM_CAPABILITY_SIZE)
     {
         @Override
         protected void onContentsChanged(int slot)
@@ -60,28 +67,21 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
         {
-            if(slot < 0 || slot >= 4)
+            if(slot < 0 || slot >= ITEM_CAPABILITY_SIZE)
                 return false;
             if(itemStack.isEmpty())
                 return true;
-            
-            var classNeeded = switch(slot)
-                    {
-                        case SLOT_CONTROLLER_LINKER -> ILinkingCard.class;
-                        default -> IEnergyModule.class;
-                    };
-            
+    
+            Class<? extends IModule> classNeeded;
+            if(slot < 1)
+                classNeeded = ILinkingCard.class;
+            else
+                classNeeded = IEnergyModule.class;
+    
             return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
         }
-        
-        @Override
-        public int getSlotLimit(int slot)
-        {
-            if(slot == SLOT_CONTROLLER_LINKER)
-                return 1;
-            return super.getSlotLimit(slot);
-        }
     };
+    
     private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(defaultEnergyStorage)
     {
         @Override

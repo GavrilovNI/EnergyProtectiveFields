@@ -3,17 +3,13 @@ package me.doggy.energyprotectivefields.api.capability.item;
 import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.IModule;
-import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
-
-public class FieldControllerItemStackHandler extends ItemStackHandler implements IHaveDirectionalSlots
+public class FieldControllerItemStackHandler extends ModulesItemStackHandler implements IHaveDirectionalSlots
 {
     public static final int SLOT_FIELD_SHAPE  = 0;
     
@@ -27,47 +23,24 @@ public class FieldControllerItemStackHandler extends ItemStackHandler implements
     {
         super(SIZE);
     }
-    
-    public boolean isShapeSlot(int slot)
-    {
-        return slot >= 0 && slot < SHAPE_SLOTS_COUNT;
-    }
-    
-    public boolean isDirectionalSlot(int slot)
-    {
-        return slot >= SHAPE_SLOTS_COUNT && slot < SHAPE_SLOTS_COUNT + DIRECTIONAL_MODULES_SLOTS_COUNT;
-    }
-    
-    public boolean isOtherSlot(int slot)
-    {
-        return slot >= SHAPE_SLOTS_COUNT + DIRECTIONAL_MODULES_SLOTS_COUNT && slot < SIZE;
-    }
-    
+
     @Override
     public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
     {
+        if(slot < 0 || slot >= SIZE)
+            return false;
         if(itemStack.isEmpty())
             return true;
         
         Class<? extends IModule> classNeeded;
-        if(isShapeSlot(slot))
+        if(slot < SHAPE_SLOTS_COUNT)
             classNeeded = IFieldShape.class;
-        else if(isDirectionalSlot(slot))
+        else if(slot < SHAPE_SLOTS_COUNT + DIRECTIONAL_MODULES_SLOTS_COUNT)
             classNeeded = IDirectionalFieldModule.class;
-        else if(isOtherSlot(slot))
-            classNeeded = IModule.class;
         else
-            return false;
+            classNeeded = IModule.class;
         
         return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
-    }
-    
-    private Optional<Integer> tryFindLimit(ItemStack itemStack)
-    {
-        IFieldModule module = InventoryHelper.getStackAs(itemStack, IFieldModule.class);
-        if(module != null)
-            return Optional.of(module.getLimitInControllerSlot(itemStack));
-        return Optional.empty();
     }
     
     @Nullable
@@ -90,19 +63,5 @@ public class FieldControllerItemStackHandler extends ItemStackHandler implements
                     case 10,11 -> Direction.DOWN;
                     default -> null;
                 };
-    }
-    
-    @Deprecated // use getStackLimit instead
-    @Override
-    public int getSlotLimit(int slot)
-    {
-        var itemStack = getStackInSlot(slot);
-        return tryFindLimit(itemStack).orElse(super.getSlotLimit(slot));
-    }
-    
-    @Override
-    protected int getStackLimit(int slot, @NotNull ItemStack stack)
-    {
-        return tryFindLimit(stack).orElse(super.getStackLimit(slot, stack));
     }
 }
