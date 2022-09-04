@@ -118,7 +118,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     protected IFieldProjector getBestProjectorToBuild(BlockPos blockPos)
     {
         IFieldProjector best = this;
-        int minEnergy = -1;
+        int minEnergy = best.getEnergyToBuildField(blockPos);
         
         for(var projector : fieldProjectors)
         {
@@ -149,7 +149,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     
     protected void redistributeFieldsBetween(IFieldProjector from, IFieldProjector to)
     {
-        var fields = from.getAllFields();
+        var fields = from.getAllFieldsInShape();
         for(var blockPos : fields)
         {
             if(from.getEnergyToBuildField(blockPos) > to.getEnergyToBuildField(blockPos))
@@ -188,9 +188,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         
         removeAllFieldBlocksWhichNotInShapeFromProjectors();
         HashSet<BlockPos> notDistributedFields = new HashSet<>(shapePositions);
-        clearFields();
         for(var projector : fieldProjectors)
-            notDistributedFields.removeAll(projector.getAllFields());
+            notDistributedFields.removeAll(projector.getAllFieldsInShape());
         
         distributeFields(notDistributedFields);
     }
@@ -200,7 +199,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         for(var blockPos : shapePositions)
         {
             if(level.getBlockEntity(blockPos) instanceof FieldBlockEntity fieldBlockEntity &&
-                    fieldProjectors.contains(fieldBlockEntity.getListener()))
+                    fieldProjectors.contains(fieldBlockEntity.getProjector()))
             {
                 distributeField(blockPos);
             }
@@ -334,7 +333,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(fieldProjectors.contains(projector) == false)
             throw new IllegalArgumentException("this controller and projector aren't linked");
         
-        var fields = projector.getAllFields();
+        var fields = projector.getAllFieldsInShape();
         projector.clearFields();
         distributeFields(fields);
     }
@@ -433,7 +432,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(level.getBlockEntity(blockPos) instanceof IFieldProjector fieldProjector)
         {
             fieldProjectors.remove(fieldProjector);
-            var fields = fieldProjector.getAllFields();
+            var fields = fieldProjector.getAllFieldsInShape();
             distributeFields(fields);
             fieldProjector.clearFields();
         }

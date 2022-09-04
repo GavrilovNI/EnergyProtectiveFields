@@ -1,7 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.IFieldProjector;
-import me.doggy.energyprotectivefields.api.IFieldStateListener;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -12,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class FieldBlockEntity extends BlockEntity
 {
+    private boolean lostProjector = false;
     private BlockPos projectorPosition = null;
     
     public FieldBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
@@ -33,12 +33,11 @@ public class FieldBlockEntity extends BlockEntity
         }
     }
     
-    
-    
     public <T extends BlockEntity> boolean isMyProjector(T projector)
     {
         if(projectorPosition == null)
             return false;
+        
         return projector instanceof IFieldProjector &&
                 projector.getLevel().equals(getLevel()) &&
                 projector.getBlockPos().equals(projectorPosition);
@@ -61,11 +60,11 @@ public class FieldBlockEntity extends BlockEntity
     }
     
     @Nullable
-    public IFieldStateListener getListener()
+    public IFieldProjector getProjector()
     {
         if(projectorPosition == null)
             return null;
-        if(level.getBlockEntity(projectorPosition) instanceof IFieldStateListener projector)
+        if(level.getBlockEntity(projectorPosition) instanceof IFieldProjector projector)
             return projector;
         else
             onLostProjector();
@@ -83,16 +82,18 @@ public class FieldBlockEntity extends BlockEntity
     public void onLoad()
     {
         super.onLoad();
-        var projector = getListener();
+        var projector = getProjector();
         if(projector != null)
             projector.onFieldCreated(this);
+        else if(lostProjector)
+            onLostProjector();
     }
     
     @Override
     public void setRemoved()
     {
         super.setRemoved();
-        var projector = getListener();
+        var projector = getProjector();
         if(projector != null)
             projector.onFieldDestroyed(this);
     }
@@ -101,9 +102,9 @@ public class FieldBlockEntity extends BlockEntity
     protected void saveAdditional(CompoundTag pTag)
     {
         super.saveAdditional(pTag);
-        
+    
         if(projectorPosition != null)
-            pTag.put("projector-pos", NbtUtils.writeBlockPos(projectorPosition));
+            pTag.put("projectorPos", NbtUtils.writeBlockPos(projectorPosition));
     }
     
     @Override
@@ -111,10 +112,15 @@ public class FieldBlockEntity extends BlockEntity
     {
         super.load(pTag);
         
-        if(pTag.contains("projector-pos"))
+        if(pTag.contains("projectorPos"))
+        {
             projectorPosition = NbtUtils.readBlockPos(pTag.getCompound("projector-pos"));
+        }
         else
+        {
             projectorPosition = null;
+            lostProjector = true;
+        }
     }
     
 }

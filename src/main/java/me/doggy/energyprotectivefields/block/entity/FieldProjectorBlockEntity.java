@@ -129,7 +129,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     {
         var controller = getLinkedController();
         if(controller != null && controller.isEnabled())
-            fieldsToDestroy.removeAll(fields.getFields(FieldSet.FieldState.Created, FieldSet.FieldState.Creating));
+            fieldsToDestroy.removeAll(fields.getFields(FieldSet.FieldState.Created));
     }
     
     private void updateControllerFromLinker()

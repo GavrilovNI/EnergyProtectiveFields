@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class FieldSet
 {
@@ -14,47 +15,38 @@ public class FieldSet
         Unknown,
         NotCreated,
         NotCreatedTwice,
-        Creating,
         Created,
+        RemovedFromShape
     }
     
     public static class Iterator implements java.util.Iterator<BlockPos>
     {
-        private static java.util.Iterator<BlockPos> emptyJavaIterator = new java.util.Iterator<>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return false;
-            }
-        
-            @Override
-            public BlockPos next()
-            {
-                return null;
-            }
-        };
-        
         private java.util.Iterator<BlockPos> realIterator;
         private final FieldSet fieldSet;
         private FieldState iteratingState;
         private FieldState currentState = null;
         private BlockPos currentBlockPos = null;
         
-        private Queue<FieldState> nextStates = new LinkedList<>();
-    
-        private java.util.Iterator<BlockPos> nextRealIterator = null;
-    
-        public static Iterator empty()
+        private final Queue<FieldState> nextStates = new LinkedList<>();
+        
+        protected Iterator()
         {
-            return new Iterator();
-        }
+            this.fieldSet = null;
+            this.realIterator = new java.util.Iterator<BlockPos>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return false;
+                }
     
-        private Iterator()
-        {
-            realIterator = emptyJavaIterator;
-            fieldSet = null;
-            iteratingState = FieldState.Unknown;
+                @Override
+                public BlockPos next()
+                {
+                    return null;
+                }
+            };
+            this.iteratingState = null;
         }
         
         public Iterator(FieldSet fieldSet, FieldState iteratingState, FieldState ... nextStates)
@@ -67,6 +59,11 @@ public class FieldSet
             this.iteratingState = iteratingState;
             
             this.nextStates.addAll(Arrays.stream(nextStates).toList());
+        }
+        
+        public BlockPos getCurrentBlockPos()
+        {
+            return currentBlockPos;
         }
         
         public FieldState getCurrentState()
@@ -180,7 +177,7 @@ public class FieldSet
         }
     }
     
-    private HashMap<FieldState, HashSet<BlockPos>> fields = new HashMap<>();
+    private final HashMap<FieldState, HashSet<BlockPos>> fields = new HashMap<>();
     
     public FieldSet()
     {
@@ -264,6 +261,19 @@ public class FieldSet
         return iterator(FieldState.Created, set.toArray(new FieldState[0]));
     }
     
+    public Iterator iteratorExcept(FieldState ... others)
+    {
+        EnumSet<FieldState> set = EnumSet.allOf(FieldState.class);
+        set.remove(FieldState.Unknown);
+        set.removeAll(Arrays.stream(others).toList());
+        if(set.isEmpty())
+            return new Iterator();
+        var setIterator = set.iterator();
+        var first = setIterator.next();
+        setIterator.remove();
+        return iterator(first, set.toArray(new FieldState[0]));
+    }
+    
     public Iterator iterator(FieldState fieldState)
     {
         return new Iterator(this, fieldState);
@@ -300,6 +310,18 @@ public class FieldSet
         return getFields(fields.keySet());
     }
     
+    public Set<BlockPos> getAllExcept(FieldState ... except)
+    {
+        return getAllExcept(Arrays.stream(except).collect(Collectors.toSet()));
+    }
+    
+    public Set<BlockPos> getAllExcept(Collection<FieldState> except)
+    {
+        var states = new HashSet<>(fields.keySet());
+        states.removeAll(except);
+        return getFields(states);
+    }
+    
     public void forEach(BiConsumer<BlockPos, FieldState> action)
     {
         for(var entry : fields.entrySet())
@@ -319,5 +341,11 @@ public class FieldSet
     {
         if(fieldState != FieldState.Unknown)
             fields.put(fieldState, new HashSet<>());
+    }
+    
+    public void clear(Set<FieldState> fieldStates)
+    {
+        for(var state : fieldStates)
+            clear(state);
     }
 }

@@ -16,6 +16,11 @@ public class BetterEnergyStorageWithStats extends BetterEnergyStorage
     protected int producedEnergy = 0;
     protected int consumedEnergy = 0;
     
+    protected int clearedReceivedEnergy = 0;
+    protected int clearedExtractedEnergy = 0;
+    protected int clearedProducedEnergy = 0;
+    protected int clearedConsumedEnergy = 0;
+    
     public BetterEnergyStorageWithStats()
     {
         super();
@@ -49,6 +54,11 @@ public class BetterEnergyStorageWithStats extends BetterEnergyStorage
     
     public void clearStats()
     {
+        clearedReceivedEnergy = receivedEnergy;
+        clearedExtractedEnergy = extractedEnergy;
+        clearedProducedEnergy = producedEnergy;
+        clearedConsumedEnergy = consumedEnergy;
+        
         receivedEnergy = 0;
         extractedEnergy = 0;
         producedEnergy = 0;
@@ -195,10 +205,10 @@ public class BetterEnergyStorageWithStats extends BetterEnergyStorage
     public void serializeNet(FriendlyByteBuf buf)
     {
         super.serializeNet(buf);
-        buf.writeInt(receivedEnergy);
-        buf.writeInt(extractedEnergy);
-        buf.writeInt(producedEnergy);
-        buf.writeInt(consumedEnergy);
+        buf.writeInt(clearedReceivedEnergy);
+        buf.writeInt(clearedExtractedEnergy);
+        buf.writeInt(clearedProducedEnergy);
+        buf.writeInt(clearedConsumedEnergy);
     }
     
     @Override

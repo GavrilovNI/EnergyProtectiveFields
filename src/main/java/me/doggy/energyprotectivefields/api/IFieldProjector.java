@@ -25,5 +25,5 @@ public interface IFieldProjector extends IFieldStateListener
     void onControllerEnabled();
     void onControllerDisabled();
     
-    Set<BlockPos> getAllFields();
+    Set<BlockPos> getAllFieldsInShape();
 }
