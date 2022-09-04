@@ -1,9 +1,8 @@
 package me.doggy.energyprotectivefields.networking.packet;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
-import me.doggy.energyprotectivefields.api.INetSerializable;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;

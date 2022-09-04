@@ -1,6 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
-import me.doggy.energyprotectivefields.api.energy.InfinityEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.InfinityEnergyStorage;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.screen.InfinityEnergyGeneratorMenu;
 import net.minecraft.core.BlockPos;

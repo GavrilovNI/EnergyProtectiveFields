@@ -1,14 +1,12 @@
 package me.doggy.energyprotectivefields.screen;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraftforge.energy.IEnergyStorage;
-import org.apache.commons.lang3.CharSequenceUtils;
 
 import java.util.ArrayList;
 import java.util.Optional;

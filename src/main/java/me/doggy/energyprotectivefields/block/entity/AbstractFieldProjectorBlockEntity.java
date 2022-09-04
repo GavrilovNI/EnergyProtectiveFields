@@ -5,18 +5,17 @@ import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
 import me.doggy.energyprotectivefields.api.IFieldProjector;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 import java.util.function.Predicate;
 
-public abstract class AbstractFieldProjectorBlockEntity extends BlockEntity implements IFieldProjector, ISwitchingHandler, IDestroyingHandler, IServerTickable
+public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IDestroyingHandler, IServerTickable
 {
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -29,12 +28,11 @@ public abstract class AbstractFieldProjectorBlockEntity extends BlockEntity impl
     
     protected int totalEnergyNeededToSupport = 0;
     
-    public AbstractFieldProjectorBlockEntity(BlockEntityType<?> pType, BlockPos pWorldPosition, BlockState pBlockState)
+    public AbstractFieldProjectorBlockEntity(BlockEntityType<?> pType, BlockPos pWorldPosition, BlockState pBlockState, BetterEnergyStorage defaultEnergyStorage)
     {
-        super(pType, pWorldPosition, pBlockState);
+        super(pType, pWorldPosition, pBlockState, defaultEnergyStorage);
     }
     
-    protected abstract BetterEnergyStorage getEnergyStorage();
     public abstract boolean isEnabled();
     protected abstract boolean canWork();
     

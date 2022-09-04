@@ -1,6 +1,5 @@
-package me.doggy.energyprotectivefields.api.energy;
+package me.doggy.energyprotectivefields.api.capability.energy;
 
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
 import net.minecraft.nbt.CompoundTag;
 
 public class InfinityEnergyStorage extends BetterEnergyStorage

@@ -1,11 +1,8 @@
-package me.doggy.energyprotectivefields.api.energy;
+package me.doggy.energyprotectivefields.api.capability.energy;
 
 
-import me.doggy.energyprotectivefields.api.INetSerializable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.common.util.INBTSerializable;
-import net.minecraftforge.energy.IEnergyStorage;
 
 import java.util.Objects;
 
@@ -31,10 +28,14 @@ public class BetterEnergyStorageWithStats extends BetterEnergyStorage
         super(energy, capacity, maxReceive, maxExtract);
     }
     
+    public BetterEnergyStorageWithStats(BetterEnergyStorage energyStorage)
+    {
+        super(energyStorage);
+    }
+    
     @Override
     public void copyFrom(BetterEnergyStorage energyStorage)
     {
-        super.copyFrom(energyStorage);
         if(energyStorage instanceof BetterEnergyStorageWithStats betterEnergyStorageWithStats)
         {
             receivedEnergy = betterEnergyStorageWithStats.receivedEnergy;
@@ -42,10 +43,18 @@ public class BetterEnergyStorageWithStats extends BetterEnergyStorage
             producedEnergy = betterEnergyStorageWithStats.producedEnergy;
             consumedEnergy = betterEnergyStorageWithStats.consumedEnergy;
         }
+        else
+        {
+            receivedEnergy = 0;
+            extractedEnergy = 0;
+            producedEnergy = 0;
+            consumedEnergy = 0;
+        }
+        super.copyFrom(energyStorage);
     }
     
     @Override
-    public BetterEnergyStorage copy()
+    public BetterEnergyStorage clone()
     {
         BetterEnergyStorageWithStats result = new BetterEnergyStorageWithStats();
         result.copyFrom(this);

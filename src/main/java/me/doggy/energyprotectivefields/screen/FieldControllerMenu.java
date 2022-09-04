@@ -6,7 +6,7 @@ import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
-import me.doggy.energyprotectivefields.data.handler.FieldControllerItemStackHandler;
+import me.doggy.energyprotectivefields.api.capability.item.FieldControllerItemStackHandler;
 import me.doggy.energyprotectivefields.screen.slot.ModuleSlot;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;

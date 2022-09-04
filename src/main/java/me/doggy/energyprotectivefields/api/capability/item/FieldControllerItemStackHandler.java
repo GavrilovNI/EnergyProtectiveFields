@@ -1,21 +1,19 @@
-package me.doggy.energyprotectivefields.data.handler;
+package me.doggy.energyprotectivefields.api.capability.item;
 
-import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.IModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
-import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
+import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
-public class FieldControllerItemStackHandler extends ItemStackHandler
+public class FieldControllerItemStackHandler extends ItemStackHandler implements IHaveDirectionalSlots
 {
     public static final int SLOT_FIELD_SHAPE  = 0;
     
@@ -61,12 +59,12 @@ public class FieldControllerItemStackHandler extends ItemStackHandler
         else
             return false;
         
-        return ItemStackConvertor.getAs(itemStack, classNeeded) != null;
+        return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
     }
     
     private Optional<Integer> tryFindLimit(ItemStack itemStack)
     {
-        IFieldModule module = ItemStackConvertor.getAs(itemStack, IFieldModule.class);
+        IFieldModule module = InventoryHelper.getStackAs(itemStack, IFieldModule.class);
         if(module != null)
             return Optional.of(module.getLimitInControllerSlot(itemStack));
         return Optional.empty();
@@ -75,29 +73,10 @@ public class FieldControllerItemStackHandler extends ItemStackHandler
     @Nullable
     public IFieldShape getShape()
     {
-        return ItemStackConvertor.getAs(getStackInSlot(FieldControllerItemStackHandler.SLOT_FIELD_SHAPE), IFieldShape.class);
+        return InventoryHelper.getStackAs(getStackInSlot(FieldControllerItemStackHandler.SLOT_FIELD_SHAPE), IFieldShape.class);
     }
     
-    public<T extends IModule> ModuleInfo<T> getModuleInfo(int slot, Class<T> clazz)
-    {
-        var moduleStack = getStackInSlot(slot);
-        var module = ItemStackConvertor.getAs(moduleStack, clazz);
-        return module == null ? null : new ModuleInfo<T>(module, moduleStack.getCount(), getSlotDirection(slot));
-    }
-    
-    public<T extends IModule> ArrayList<ModuleInfo<T>> getModulesInfo(Class<T> clazz)
-    {
-        ArrayList<ModuleInfo<T>> modules = new ArrayList<>();
-        
-        for(int i = 0; i < getSlots(); ++i)
-        {
-            var info = getModuleInfo(i, clazz);
-            if(info != null)
-                modules.add(info);
-        }
-        return modules;
-    }
-    
+    @Override
     @Nullable
     public Direction getSlotDirection(int slot)
     {

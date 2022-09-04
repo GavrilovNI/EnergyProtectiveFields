@@ -3,11 +3,10 @@ package me.doggy.energyprotectivefields.screen;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.networking.NetworkManager;
 import me.doggy.energyprotectivefields.networking.packet.UpdateEnergyCapabilityInBlockEntityS2CPacket;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -48,7 +47,7 @@ public abstract class AbstractContainerWithEnergyMenu extends BaseItemInventoryM
             if(energyStorage instanceof BetterEnergyStorage serializableEnergyStorage)
             {
                 NetworkManager.sendToPlayer(new UpdateEnergyCapabilityInBlockEntityS2CPacket(blockEntity.getLevel(), blockEntity.getBlockPos(), serializableEnergyStorage), serverPlayer);
-                setSentStorage(serializableEnergyStorage.copy());
+                setSentStorage(serializableEnergyStorage.clone());
             }
             else
             {

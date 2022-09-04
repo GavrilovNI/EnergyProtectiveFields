@@ -2,9 +2,10 @@ package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ILinkingCard;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
-import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
+import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import me.doggy.energyprotectivefields.block.FieldProjectorBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
@@ -36,10 +37,9 @@ import org.jetbrains.annotations.Nullable;
 public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity implements MenuProvider
 {
     public static final int SLOT_CONTROLLER_LINKER = 0;
-    public static final int ITEM_CAPABILITY_SIZE = 1;
+    public static final int ITEM_CAPABILITY_SIZE = 4;
     
-    public static final int DEFAULT_ENERGY_CAPACITY = 50000;
-    public static final int DEFAULT_MAX_ENERGY_RECEIVE = 10000;
+    private static final BetterEnergyStorage defaultEnergyStorage = new BetterEnergyStorage(0, 50000, 10000, 0);
     
     private WorldLinks.LinkInfo linkedControllerInfo = null;
     
@@ -49,26 +49,29 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
         protected void onContentsChanged(int slot)
         {
             setChanged();
-            if(slot == SLOT_CONTROLLER_LINKER)
-                updateControllerFromLinker();
+            if(level.isClientSide() == false)
+            {
+                if(slot == SLOT_CONTROLLER_LINKER)
+                    updateControllerFromLinker();
+                updateEnergyStorage(InventoryHelper.getModuleInfos(itemStackHandler, IEnergyModule.class));
+            }
         }
-        
+    
         @Override
         public boolean isItemValid(int slot, @NotNull ItemStack itemStack)
         {
+            if(slot < 0 || slot >= 4)
+                return false;
             if(itemStack.isEmpty())
                 return true;
             
             var classNeeded = switch(slot)
                     {
                         case SLOT_CONTROLLER_LINKER -> ILinkingCard.class;
-                        default -> null;
+                        default -> IEnergyModule.class;
                     };
             
-            if(classNeeded == null)
-                return false;
-            
-            return ItemStackConvertor.getAs(itemStack, classNeeded) != null;
+            return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
         }
         
         @Override
@@ -79,8 +82,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
             return super.getSlotLimit(slot);
         }
     };
-    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(0, DEFAULT_ENERGY_CAPACITY,
-            DEFAULT_MAX_ENERGY_RECEIVE, 0)
+    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(defaultEnergyStorage)
     {
         @Override
         public void onChanged()
@@ -95,7 +97,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     
     public FieldProjectorBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
-        super(ModBlockEntities.FIELD_PROJECTOR.get(), pWorldPosition, pBlockState);
+        super(ModBlockEntities.FIELD_PROJECTOR.get(), pWorldPosition, pBlockState, defaultEnergyStorage);
     }
     
     @Override
@@ -135,7 +137,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     private void updateControllerFromLinker()
     {
         var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
-        var controllerLinker = ItemStackConvertor.getAs(controllerLinkerStack, ILinkingCard.class);
+        var controllerLinker = InventoryHelper.getStackAs(controllerLinkerStack, ILinkingCard.class);
         if(controllerLinker == null)
             unlink();
         else
@@ -191,7 +193,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     }
     
     @Override
-    protected BetterEnergyStorage getEnergyStorage()
+    public BetterEnergyStorage getEnergyStorage()
     {
         return energyStorage;
     }

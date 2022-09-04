@@ -1,7 +1,7 @@
 package me.doggy.energyprotectivefields.screen.slot;
 
 import me.doggy.energyprotectivefields.api.module.IModule;
-import me.doggy.energyprotectivefields.api.utils.ItemStackConvertor;
+import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
@@ -18,7 +18,7 @@ public class ModuleSlot<T extends IModule> extends SlotItemHandlerWithNotifier
     @Override
     public boolean mayPlace(ItemStack pStack)
     {
-        T module = ItemStackConvertor.getAs(pStack, clazz);
+        T module = InventoryHelper.getStackAs(pStack, clazz);
         return module != null && super.mayPlace(pStack);
     }
     
@@ -32,7 +32,7 @@ public class ModuleSlot<T extends IModule> extends SlotItemHandlerWithNotifier
     @Override
     public int getMaxStackSize(ItemStack pStack)
     {
-        T module = ItemStackConvertor.getAs(pStack, clazz);
+        T module = InventoryHelper.getStackAs(pStack, clazz);
         if(module != null)
             return Math.min(module.getLimitInControllerSlot(pStack), super.getMaxStackSize(pStack));
         return super.getMaxStackSize(pStack);

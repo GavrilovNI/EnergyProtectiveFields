@@ -1,14 +1,16 @@
 package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.*;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorage;
-import me.doggy.energyprotectivefields.api.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
+import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
+import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
-import me.doggy.energyprotectivefields.data.handler.FieldControllerItemStackHandler;
+import me.doggy.energyprotectivefields.api.capability.item.FieldControllerItemStackHandler;
 import me.doggy.energyprotectivefields.screen.FieldControllerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -35,12 +37,9 @@ import java.util.*;
 
 public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntity implements IHaveUUID, ILinkable, MenuProvider
 {
-    public static final int ENERGY_STORAGE_DEFAULT_CAPACITY = 50000;
-    public static final int ENERGY_STORAGE_DEFAULT_RECEIVE = 10000;
+    private static final BetterEnergyStorage defaultEnergyStorage = new BetterEnergyStorage(0, 50000, 10000, 0);
     
     private UUID uuid;
-    
-    private boolean hasEnergyInfinityModule;
     
     private final HashSet<IFieldProjector> fieldProjectors = new HashSet<>();
     
@@ -55,52 +54,18 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             if(level.isClientSide() == false)
             {
                 updateShape();
-                //updateEnergyStorage();
+                updateEnergyStorage(InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IEnergyModule.class));
             }
         }
     };
-    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(0, ENERGY_STORAGE_DEFAULT_CAPACITY,
-            ENERGY_STORAGE_DEFAULT_RECEIVE, 0)
+    
+    private final BetterEnergyStorageWithStats energyStorage = new BetterEnergyStorageWithStats(defaultEnergyStorage)
     {
         @Override
         public void onChanged()
         {
             super.onChanged();
             setChanged();
-        }
-        
-        @Override
-        public int consumeEnergy(int maxConsume, boolean simulate)
-        {
-            if(hasEnergyInfinityModule)
-            {
-                var oldEnergy = energy;
-                energy = Integer.MAX_VALUE;
-                var result = super.consumeEnergy(maxConsume, simulate);
-                energy = oldEnergy;
-                return result;
-            }
-            else
-            {
-                return super.consumeEnergy(maxConsume, simulate);
-            }
-        }
-        
-        @Override
-        public boolean consumeExact(int count)
-        {
-            if(hasEnergyInfinityModule)
-            {
-                var oldEnergy = energy;
-                energy = Integer.MAX_VALUE;
-                super.consumeExact(count);
-                energy = oldEnergy;
-                return true;
-            }
-            else
-            {
-                return super.consumeExact(count);
-            }
         }
     };
     
@@ -109,7 +74,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     
     public FieldControllerBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
-        super(ModBlockEntities.FIELD_CONTROLLER.get(), pWorldPosition, pBlockState);
+        super(ModBlockEntities.FIELD_CONTROLLER.get(), pWorldPosition, pBlockState, defaultEnergyStorage);
         uuid = UUID.randomUUID();
         fieldProjectors.add(this);
     }
@@ -177,7 +142,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         IFieldShape fieldShape = itemStackHandler.getShape();
         if(fieldShape != null)
         {
-            var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
+            var modules = InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IFieldModule.class);
             ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
             shapePositions = shapeBuilder.init().addFields(fieldShape).build();
         }
@@ -216,32 +181,6 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             redistributeFieldsBetween(otherProjector, fieldProjector);
         }
     }
-    
-    /*protected void updateEnergyStorage()
-    {
-        var receiveModules = itemStackHandler.getModulesInfo(IEnergyReceiveExtensionModule.class);
-        int maxReceive = ENERGY_STORAGE_DEFAULT_RECEIVE;
-        for(var module : receiveModules)
-        {
-            var toAdd = module.getModule().getEnergyReceiveShift() * module.getCount();
-            maxReceive += Math.min(Integer.MAX_VALUE - maxReceive, toAdd);
-        }
-        this.energyStorage.setMaxReceive(maxReceive);
-        
-        var capacityModules = itemStackHandler.getModulesInfo(IEnergyCapacityExtensionModule.class);
-        int capacity = ENERGY_STORAGE_DEFAULT_CAPACITY;
-        for(var module : capacityModules)
-        {
-            var toAdd = module.getModule().getEnergyCapacityShift() * module.getCount();
-            capacity += Math.min(Integer.MAX_VALUE - capacity, toAdd);
-        }
-        this.energyStorage.setMaxEnergyStored(capacity);
-        
-        hasEnergyInfinityModule = itemStackHandler.getModulesInfo(CreativeEnergyModule.class).isEmpty() == false;
-        
-        if(hasEnergyInfinityModule)
-            this.energyStorage.setEnergyStored(this.energyStorage.getMaxEnergyStored());
-    }*/
     
     @Override
     public UUID getUUID()
@@ -293,7 +232,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     }
     
     @Override
-    protected BetterEnergyStorage getEnergyStorage()
+    public BetterEnergyStorage getEnergyStorage()
     {
         return energyStorage;
     }
@@ -366,8 +305,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                 if(level.getBlockEntity(position) instanceof IFieldProjector fieldProjector)
                     fieldProjectors.add(fieldProjector);
             }
-            
-            //updateEnergyStorage();
+            updateEnergyStorage(InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IEnergyModule.class));
             
             updateShape();
             updateFieldBlockStatesFromWorldByShape();

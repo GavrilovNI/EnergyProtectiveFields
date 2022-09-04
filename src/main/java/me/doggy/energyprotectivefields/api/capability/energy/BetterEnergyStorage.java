@@ -1,4 +1,4 @@
-package me.doggy.energyprotectivefields.api.energy;
+package me.doggy.energyprotectivefields.api.capability.energy;
 
 
 import me.doggy.energyprotectivefields.api.INetSerializable;
@@ -29,7 +29,12 @@ public class BetterEnergyStorage implements IEnergyStorage, INetSerializable, IN
         this.maxExtract = Math.max(maxExtract, 0);
     }
     
-    public BetterEnergyStorage copy()
+    public BetterEnergyStorage(BetterEnergyStorage betterEnergyStorage)
+    {
+        copyFrom(betterEnergyStorage);
+    }
+    
+    public BetterEnergyStorage clone()
     {
         return new BetterEnergyStorage(energy, capacity, maxReceive, maxExtract);
     }
@@ -40,6 +45,7 @@ public class BetterEnergyStorage implements IEnergyStorage, INetSerializable, IN
         this.energy = energyStorage.getEnergyStored();
         this.maxReceive = energyStorage.getMaxReceive();
         this.maxExtract = energyStorage.getMaxExtract();
+        onChanged();
     }
     
     @Override
