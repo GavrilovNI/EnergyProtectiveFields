@@ -3,7 +3,7 @@ package me.doggy.energyprotectivefields.api.capability.item;
 import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.IModule;
-import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
+import me.doggy.energyprotectivefields.api.utils.ItemStackConverter;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
@@ -40,13 +40,13 @@ public class FieldControllerItemStackHandler extends ModulesItemStackHandler imp
         else
             classNeeded = IModule.class;
         
-        return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
+        return ItemStackConverter.getStackAs(itemStack, classNeeded) != null;
     }
     
     @Nullable
     public IFieldShape getShape()
     {
-        return InventoryHelper.getStackAs(getStackInSlot(FieldControllerItemStackHandler.SLOT_FIELD_SHAPE), IFieldShape.class);
+        return ItemStackConverter.getStackAs(getStackInSlot(FieldControllerItemStackHandler.SLOT_FIELD_SHAPE), IFieldShape.class);
     }
     
     @Override

@@ -6,7 +6,6 @@ import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
-import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
@@ -54,7 +53,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             if(level.isClientSide() == false)
             {
                 updateShape();
-                updateEnergyStorage(InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IEnergyModule.class));
+                updateEnergyStorage(getModulesInfo(IEnergyModule.class));
             }
         }
     };
@@ -142,7 +141,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         IFieldShape fieldShape = itemStackHandler.getShape();
         if(fieldShape != null)
         {
-            var modules = InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IFieldModule.class);
+            var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
             ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
             shapePositions = shapeBuilder.init().addFields(fieldShape).build();
         }
@@ -305,7 +304,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                 if(level.getBlockEntity(position) instanceof IFieldProjector fieldProjector)
                     fieldProjectors.add(fieldProjector);
             }
-            updateEnergyStorage(InventoryHelper.getDirectionalModuleInfos(itemStackHandler, IEnergyModule.class));
+            updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
             
             updateShape();
             updateFieldBlockStatesFromWorldByShape();

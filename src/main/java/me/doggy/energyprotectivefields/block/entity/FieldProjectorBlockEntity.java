@@ -7,10 +7,7 @@ import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage
 import me.doggy.energyprotectivefields.api.capability.item.ModulesItemStackHandler;
 import me.doggy.energyprotectivefields.api.module.IModule;
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
-import me.doggy.energyprotectivefields.api.module.field.IDirectionalFieldModule;
-import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
-import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
-import me.doggy.energyprotectivefields.api.utils.InventoryHelper;
+import me.doggy.energyprotectivefields.api.utils.ItemStackConverter;
 import me.doggy.energyprotectivefields.block.FieldProjectorBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldLinks;
@@ -35,11 +32,8 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Optional;
 
 public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity implements MenuProvider
 {
@@ -60,7 +54,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
             {
                 if(slot == SLOT_CONTROLLER_LINKER)
                     updateControllerFromLinker();
-                updateEnergyStorage(InventoryHelper.getModuleInfos(itemStackHandler, IEnergyModule.class));
+                updateEnergyStorage(getModulesInfo(IEnergyModule.class));
             }
         }
     
@@ -78,7 +72,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
             else
                 classNeeded = IEnergyModule.class;
     
-            return InventoryHelper.getStackAs(itemStack, classNeeded) != null;
+            return ItemStackConverter.getStackAs(itemStack, classNeeded) != null;
         }
     };
     
@@ -137,7 +131,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     private void updateControllerFromLinker()
     {
         var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
-        var controllerLinker = InventoryHelper.getStackAs(controllerLinkerStack, ILinkingCard.class);
+        var controllerLinker = ItemStackConverter.getStackAs(controllerLinkerStack, ILinkingCard.class);
         if(controllerLinker == null)
             unlink();
         else

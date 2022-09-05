@@ -63,9 +63,12 @@ public class ModItems
             new CreativeEnergyModule(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
-    
     public static final RegistryObject<Item> ROTATION_MODULE = ITEMS.register("rotation_module", () ->
             new RotationModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
+    public static final RegistryObject<Item> TUBE_MODULE = ITEMS.register("tube_module", () ->
+            new TubeModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
     public static void register(IEventBus eventBus)

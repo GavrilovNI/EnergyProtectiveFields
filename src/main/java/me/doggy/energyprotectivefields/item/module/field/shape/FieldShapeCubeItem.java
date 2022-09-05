@@ -2,6 +2,8 @@ package me.doggy.energyprotectivefields.item.module.field.shape;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.field.ITubeModule;
+import me.doggy.energyprotectivefields.item.module.field.TubeModuleItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
@@ -28,6 +30,8 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
         BoundingBox minBounds = getBounds(center, sizes, 0);
         BoundingBox maxBounds = getBounds(center, sizes, strength);
         
+        boolean hasNotTubeModule = shapeBuilder.hasModule(ITubeModule.class) == false;
+        
         for(int s = 0; s < strength + 1; ++s)
         {
             for(int y = minBounds.minY() + 1; y < minBounds.maxY(); ++y)
@@ -48,14 +52,17 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                 }
             }
     
-            for(int x = maxBounds.minX(); x <= maxBounds.maxX(); ++x)
+            if(hasNotTubeModule)
             {
-                for(int z = maxBounds.minZ(); z <= maxBounds.maxZ(); ++z)
+                for(int x = maxBounds.minX(); x <= maxBounds.maxX(); ++x)
                 {
-                    //bottom
-                    shapeBuilder.addField(new BlockPos(x, minBounds.minY() - s, z));
-                    //top
-                    shapeBuilder.addField(new BlockPos(x, minBounds.maxY() + s, z));
+                    for(int z = maxBounds.minZ(); z <= maxBounds.maxZ(); ++z)
+                    {
+                        //bottom
+                        shapeBuilder.addField(new BlockPos(x, minBounds.minY() - s, z));
+                        //top
+                        shapeBuilder.addField(new BlockPos(x, minBounds.maxY() + s, z));
+                    }
                 }
             }
         }

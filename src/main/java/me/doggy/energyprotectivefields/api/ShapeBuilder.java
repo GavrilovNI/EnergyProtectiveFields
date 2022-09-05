@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.api;
 
+import me.doggy.energyprotectivefields.api.module.IModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShapeValidator;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
@@ -49,6 +50,25 @@ public class ShapeBuilder
         for(var moduleInfo : modules)
             moduleInfo.getModule().applyOnInit(this, moduleInfo);
         return this;
+    }
+    
+    public boolean hasModule(Class<? extends IModule> clazz)
+    {
+        for(var moduleInfo : modules)
+            if(clazz.isAssignableFrom(moduleInfo.getModule().getClass()))
+                return true;
+        return false;
+    }
+    
+    public ArrayList<ModuleInfo<IFieldModule>> getModules(Class<IModule> clazz)
+    {
+        ArrayList<ModuleInfo<IFieldModule>> result = new ArrayList<>();
+    
+        for(var moduleInfo : modules)
+            if(clazz.isAssignableFrom(moduleInfo.getModule().getClass()))
+                result.add(moduleInfo);
+        
+        return result;
     }
     
     public FieldControllerBlockEntity getController()

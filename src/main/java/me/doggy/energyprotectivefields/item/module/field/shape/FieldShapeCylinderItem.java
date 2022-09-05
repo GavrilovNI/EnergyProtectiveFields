@@ -2,6 +2,7 @@ package me.doggy.energyprotectivefields.item.module.field.shape;
 
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
+import me.doggy.energyprotectivefields.api.module.field.ITubeModule;
 import me.doggy.energyprotectivefields.api.utils.Math3D;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -37,7 +38,9 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
     
         Vec3 centerOfCenterBlockLocal = Vec3.atCenterOf(Vec3i.ZERO).subtract(0, offsetInnerDown, 0);
         Vec3i resultMultiplier = new Vec3i(dirX.getNormal().getX(), 1, dirZ.getNormal().getZ());
-    
+        
+        boolean hasTubeModule = shapeBuilder.hasModule(ITubeModule.class);
+        
         for(int x = 0; x <= size.getX() + additiveStrength; ++x)
         {
             for(int z = 0; z <= size.getZ() + additiveStrength; ++z)
@@ -52,24 +55,25 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
                 if(isClosestInside)
                 {
                     BlockPos result = Math3D.multiply(blockPos, resultMultiplier).offset(centerBlock);
+    
+                    Vec3 farthestPoint = Math3D.getFarthestPointOfBlock(blockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
+                    double posLocationFarthest = (farthestPoint.x * farthestPoint.x) / (size.getX() * size.getX()) +
+                            (farthestPoint.z * farthestPoint.z) / (size.getZ() * size.getZ());
+                    boolean isFarthestOutside = posLocationFarthest > 1;
                     
-                    if(innerHeight > 0)
+                    if(innerHeight > 0 && isFarthestOutside)
                     {
-                        Vec3 farthestPoint = Math3D.getFarthestPointOfBlock(blockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
-                        double posLocationFarthest = (farthestPoint.x * farthestPoint.x) / (size.getX() * size.getX()) +
-                                (farthestPoint.z * farthestPoint.z) / (size.getZ() * size.getZ());
-                        boolean isFarthestOutside = posLocationFarthest > 1;
-                        if(isFarthestOutside)
-                        {
-                            for(int y = 0; y < innerHeight; y++)
-                                shapeBuilder.addField(result.above(y));
-                        }
+                        for(int y = 0; y < innerHeight; y++)
+                            shapeBuilder.addField(result.above(y));
                     }
                     
-                    for(int i = 0; i < additiveStrength + 1; ++i)
+                    if(isFarthestOutside || hasTubeModule == false)
                     {
-                        shapeBuilder.addField(result.below(i + 1));
-                        shapeBuilder.addField(result.above(i + innerHeight));
+                        for(int i = 0; i < additiveStrength + 1; ++i)
+                        {
+                            shapeBuilder.addField(result.below(i + 1));
+                            shapeBuilder.addField(result.above(i + innerHeight));
+                        }
                     }
                 }
             }
