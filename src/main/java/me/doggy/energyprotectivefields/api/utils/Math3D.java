@@ -62,8 +62,13 @@ public class Math3D
         return new Vec3(x, y, z);
     }
     
-    public static BlockPos multiply(Vec3i a, Vec3i b)
+    public static BlockPos multiplyByAxes(Vec3i a, Vec3i b)
     {
         return new BlockPos(a.getX() * b.getX(), a.getY() * b.getY(), a.getZ() * b.getZ());
+    }
+    
+    public static Vec3 divideByAxes(Vec3i a, Vec3i b)
+    {
+        return new Vec3(((double)a.getX()) / b.getX(), ((double)a.getY()) / b.getY(), ((double)a.getZ()) / b.getZ());
     }
 }

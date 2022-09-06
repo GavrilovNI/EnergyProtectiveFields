@@ -58,7 +58,7 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
                 
                     if(isFarthestOutside && isClosestInside)
                     {
-                        BlockPos result = Math3D.multiply(blockPos, resultMultiplier).offset(centerBlock);
+                        BlockPos result = Math3D.multiplyByAxes(blockPos, resultMultiplier).offset(centerBlock);
                         shapeBuilder.addField(result);
                     }
                 }
@@ -71,5 +71,45 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
     {
         for(int i = 0; i < 8; ++i)
             buildPart(shapeBuilder, i);
+    }
+    
+    protected boolean isInsideSpherePart(ShapeBuilder shapeBuilder, Vec3i blockPos, int part)
+    {
+        var centerBlock = shapeBuilder.getCenter();
+        var sizes = shapeBuilder.getSizes();
+        var strength = shapeBuilder.getStrength();
+    
+        var dirX = (part & 1) == 0 ? Direction.EAST : Direction.WEST;
+        var dirY = (part & 2) == 0 ? Direction.UP : Direction.DOWN;
+        var dirZ = (part & 4) == 0 ? Direction.SOUTH : Direction.NORTH;
+    
+        Vec3i size = new Vec3i(sizes.get(dirX), sizes.get(dirY), sizes.get(dirZ)).offset(MIN_RADIUS, MIN_RADIUS, MIN_RADIUS);
+        Vec3i sizeBig = size.offset(strength, strength, strength);
+    
+        Vec3 centerOfCenterBlockLocal = Vec3.atCenterOf(Vec3i.ZERO);
+    
+        Vec3i resultMultiplier = new Vec3i(dirX.getNormal().getX(), dirY.getNormal().getY(), dirZ.getNormal().getZ());
+    
+        BlockPos localBlockPos = new BlockPos(Math3D.divideByAxes(blockPos.subtract(centerBlock), resultMultiplier));
+        
+        Vec3 closestPoint = Math3D.getClosestPointOfBlock(localBlockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
+    
+        double posLocationClosest = (closestPoint.x * closestPoint.x) / (sizeBig.getX() * sizeBig.getX()) +
+                (closestPoint.y * closestPoint.y)/(sizeBig.getY() * sizeBig.getY()) +
+                (closestPoint.z * closestPoint.z)/(sizeBig.getZ() * sizeBig.getZ());
+    
+        boolean isClosestInside = posLocationClosest <= 1;
+        
+        return isClosestInside;
+    }
+    
+    @Override
+    public boolean isInside(ShapeBuilder shapeBuilder, Vec3i blockPos)
+    {
+        for(int quarterIndex = 0; quarterIndex < 4; ++quarterIndex)
+            if(isInsideSpherePart(shapeBuilder, blockPos, quarterIndex))
+                return true;
+        
+        return false;
     }
 }

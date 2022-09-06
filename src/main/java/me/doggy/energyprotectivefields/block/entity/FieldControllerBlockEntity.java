@@ -8,11 +8,13 @@ import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
+import me.doggy.energyprotectivefields.data.WorldFieldsBounds;
 import me.doggy.energyprotectivefields.data.WorldLinks;
 import me.doggy.energyprotectivefields.api.capability.item.FieldControllerItemStackHandler;
 import me.doggy.energyprotectivefields.screen.FieldControllerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
@@ -24,6 +26,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -43,6 +47,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private final HashSet<IFieldProjector> fieldProjectors = new HashSet<>();
     
     private Set<BlockPos> shapePositions = new HashSet<>();
+    private ShapeBuilder currentShapeBuilder = null;
     
     private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
@@ -78,6 +83,20 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         fieldProjectors.add(this);
     }
     
+    @Nullable
+    public BoundingBox getShapeBounds()
+    {
+        if(currentShapeBuilder == null)
+            return null;
+        return currentShapeBuilder.getBounds();
+    }
+    
+    public boolean isInsideField(Vec3i pos)
+    {
+        if(currentShapeBuilder == null)
+            return false;
+        return currentShapeBuilder.isInsideField(itemStackHandler.getShape(), pos);
+    }
     
     protected IFieldProjector getBestProjectorToBuild(BlockPos blockPos)
     {
@@ -97,6 +116,18 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             }
         }
         return best;
+    }
+    
+    protected void updateWorldFieldBounds()
+    {
+        if(level instanceof ServerLevel serverLevel)
+        {
+            var worldFieldsBounds = WorldFieldsBounds.get(serverLevel);
+            if(isEnabled() && isRemoved() == false)
+                worldFieldsBounds.updateController(this);
+            else
+                worldFieldsBounds.removeController(worldPosition);
+        }
     }
     
     protected void distributeField(BlockPos fieldPosition)
@@ -142,11 +173,12 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(fieldShape != null)
         {
             var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
-            ShapeBuilder shapeBuilder = new ShapeBuilder(this, modules);
-            shapePositions = shapeBuilder.init().addFields(fieldShape).build();
+            currentShapeBuilder = new ShapeBuilder(this, modules).init().addFields(fieldShape);
+            shapePositions = currentShapeBuilder.build();
         }
         else
         {
+            currentShapeBuilder = null;
             shapePositions = new HashSet<>();
         }
         
@@ -156,6 +188,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             notDistributedFields.removeAll(projector.getAllFieldsInShape());
         
         distributeFields(notDistributedFields);
+    
+        updateWorldFieldBounds();
     }
     
     protected void updateFieldBlockStatesFromWorldByShape()
@@ -202,6 +236,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         super.onEnabled();
         for(var projector : fieldProjectors)
             projector.onControllerEnabled();
+        
+        updateWorldFieldBounds();
     }
     
     @Override
@@ -210,6 +246,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         super.onDisabled();
         for(var projector : fieldProjectors)
             projector.onControllerDisabled();
+        
+        updateWorldFieldBounds();
     }
     
     @Override
@@ -247,6 +285,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     {
         super.onDestroyed();
         dropInventory();
+        
+        updateWorldFieldBounds();
     }
     
     @Override

@@ -2,7 +2,9 @@ package me.doggy.energyprotectivefields.api.module.field;
 
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 public interface IFieldShape extends IFieldModule
 {
@@ -16,4 +18,6 @@ public interface IFieldShape extends IFieldModule
     
     @Override
     default void applyOnInit(ShapeBuilder builder, ModuleInfo moduleInfo){}
+    
+    boolean isInside(ShapeBuilder shapeBuilder, Vec3i blockPos);
 }

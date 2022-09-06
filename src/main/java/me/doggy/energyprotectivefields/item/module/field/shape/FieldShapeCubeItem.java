@@ -6,6 +6,7 @@ import me.doggy.energyprotectivefields.api.module.field.ITubeModule;
 import me.doggy.energyprotectivefields.item.module.field.TubeModuleItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
@@ -66,6 +67,18 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                 }
             }
         }
+    }
+    
+    @Override
+    public boolean isInside(ShapeBuilder shapeBuilder, Vec3i blockPos)
+    {
+        var center = shapeBuilder.getCenter();
+        var sizes = shapeBuilder.getSizes();
+        var strength = shapeBuilder.getStrength();
+    
+        BoundingBox maxBounds = getBounds(center, sizes, strength);
+        
+        return maxBounds.isInside(blockPos);
     }
     
     public BoundingBox getBounds(BlockPos center, Map<Direction, Integer> sizes, int strengthUpgrade)

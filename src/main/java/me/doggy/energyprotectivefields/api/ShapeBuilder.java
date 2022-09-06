@@ -8,6 +8,7 @@ import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -36,6 +37,8 @@ public class ShapeBuilder
     private final int[] rotatedMultipliers = {1, 1, 1};
     private final Direction.Axis[] rotatedAxisByIndex = axes.toArray(Direction.Axis[]::new);
     
+    private BoundingBox bounds = null;
+    
     public ShapeBuilder(FieldControllerBlockEntity controller, Collection<ModuleInfo<IFieldModule>> modules)
     {
         this.controller = controller;
@@ -50,6 +53,13 @@ public class ShapeBuilder
         for(var moduleInfo : modules)
             moduleInfo.getModule().applyOnInit(this, moduleInfo);
         return this;
+    }
+    
+    public BoundingBox getBounds()
+    {
+        if(bounds == null)
+            return null;
+        return new BoundingBox(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ());
     }
     
     public boolean hasModule(Class<? extends IModule> clazz)
@@ -149,6 +159,20 @@ public class ShapeBuilder
         );
     }
     
+    public BlockPos rotateVectorBack(Vec3i vector)
+    {
+        int[] values = { vector.getX() / rotatedMultipliers[0], vector.getY() / rotatedMultipliers[1], vector.getZ() / rotatedMultipliers[2] };
+        int[] newValues = { vector.getX() / rotatedMultipliers[0], vector.getY() / rotatedMultipliers[1], vector.getZ() / rotatedMultipliers[2] };
+        
+        for(int i = 0; i < 3; ++i)
+        {
+            var axisIndex = axes.indexOf(rotatedAxisByIndex[i]);
+            newValues[axisIndex] = values[i];
+        }
+        
+        return new BlockPos(newValues[0], newValues[1], newValues[2]);
+    }
+    
     public BlockPos getCenter()
     {
         return center;
@@ -209,19 +233,43 @@ public class ShapeBuilder
         return this;
     }
     
-    public ShapeBuilder addField(BlockPos blockPos)
+    protected boolean validateBlockPos(Vec3i blockPos)
     {
-        var center = getCenter();
-        blockPos = rotateVector(blockPos.subtract(center)).offset(center);
         for(var moduleInfo : modules)
         {
             if(moduleInfo.getModule() instanceof IFieldShapeValidator fieldShapeChanger)
                 if(fieldShapeChanger.isInShape(this, blockPos) == false)
-                    return this;
+                    return false;
         }
+        return true;
+    }
+    
+    public ShapeBuilder addField(BlockPos blockPos)
+    {
+        var center = getCenter();
+        blockPos = rotateVector(blockPos.subtract(center)).offset(center);
+        
+        if(validateBlockPos(blockPos) == false)
+            return this;
         
         positions.add(blockPos);
+        
+        if(bounds == null)
+            bounds = new BoundingBox(blockPos);
+        else
+            bounds.encapsulate(blockPos);
         return this;
+    }
+    
+    public boolean isInsideField(IFieldShape shape, Vec3i pos)
+    {
+        if(bounds == null)
+            return false;
+        
+        if(bounds.isInside(pos) && shape.isInside(this, rotateVectorBack(pos.subtract(center)).offset(center)) && validateBlockPos(pos))
+            return true;
+        
+        return false;
     }
     
     public ShapeBuilder addFields(IFieldShape shape)

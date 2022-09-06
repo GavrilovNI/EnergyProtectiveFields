@@ -62,13 +62,13 @@ public class WorldLinks extends SavedData
         }
     }
     
-    private ArrayListMultimap<LinkInfo, BlockPos> controllerToOthers = ArrayListMultimap.create();
-    private ServerLevel level;
+    private final ArrayListMultimap<LinkInfo, BlockPos> controllerToOthers = ArrayListMultimap.create();
+    private final ServerLevel level;
     
     public static WorldLinks get(ServerLevel level)
     {
         DimensionDataStorage storage = level.getDataStorage();
-        return storage.computeIfAbsent((tag) -> new WorldLinks(level, tag), () -> new WorldLinks(level), EnergyProtectiveFields.MOD_ID + ":connections");
+        return storage.computeIfAbsent((tag) -> new WorldLinks(level, tag), () -> new WorldLinks(level), EnergyProtectiveFields.MOD_ID + "_links");
     }
     
     public static LinkInfo getControllerLinkInfo(FieldControllerBlockEntity controller)
@@ -85,11 +85,11 @@ public class WorldLinks extends SavedData
     {
         this(level);
         
-        ListTag blockLinks = nbt.getList("controllerBlockLinks", Tag.TAG_COMPOUND);
+        ListTag blockLinks = nbt.getList("controller_block_links", Tag.TAG_COMPOUND);
         for(Tag controllerTag : blockLinks)
         {
             CompoundTag controllerCompoundTag = (CompoundTag)controllerTag;
-            var controllerInfo = new LinkInfo(controllerCompoundTag.getCompound("controllerLinkInfo"));
+            var controllerInfo = new LinkInfo(controllerCompoundTag.getCompound("controller_link_info"));
             
             ListTag othersList = controllerCompoundTag.getList("links", Tag.TAG_COMPOUND);
             
@@ -109,7 +109,7 @@ public class WorldLinks extends SavedData
         {
             CompoundTag controllerTag = new CompoundTag();
             var controllerInfo = entry.getKey();
-            controllerTag.put("controllerLinkInfo", controllerInfo.serializeNBT());
+            controllerTag.put("controller_link_info", controllerInfo.serializeNBT());
             
             ListTag othersList = new ListTag();
             for(var otherPos : entry.getValue())
@@ -120,7 +120,7 @@ public class WorldLinks extends SavedData
             
             blockLinks.add(controllerTag);
         }
-        nbt.put("controllerBlockLinks", blockLinks);
+        nbt.put("controller_block_links", blockLinks);
         return nbt;
     }
     
