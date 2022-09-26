@@ -30,6 +30,10 @@ public class ModBlockEntities
             BLOCK_ENTITIES.register("field_projector", () -> BlockEntityType.Builder.of(FieldProjectorBlockEntity::new,
                     ModBlocks.FIELD_PROJECTOR.get()).build(null));
     
+    public static final RegistryObject<BlockEntityType<ChunkLoadingTesterBlockEntity>> CHUNK_TESTER =
+            BLOCK_ENTITIES.register("chunk_loading_tester", () -> BlockEntityType.Builder.of(ChunkLoadingTesterBlockEntity::new,
+                    ModBlocks.CHUNK_TESTER.get()).build(null));
+    
     public static void register(IEventBus eventBus)
     {
         BLOCK_ENTITIES.register(eventBus);

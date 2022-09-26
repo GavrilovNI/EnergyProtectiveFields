@@ -157,9 +157,9 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     
     protected void link(@Nullable WorldLinks.LinkInfo connectionInfo)
     {
-        unlink();
         if(level instanceof ServerLevel serverLevel)
         {
+            unlink();
             linkedControllerInfo = connectionInfo;
             if(connectionInfo != null)
                 WorldLinks.get(serverLevel).addLink(connectionInfo, worldPosition);
@@ -179,11 +179,11 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     }
     
     @Override
-    public void onDestroyed()
+    public void onDestroying()
     {
-        super.onDestroyed();
-        dropInventory();
         unlink();
+        dropInventory();
+        super.onDestroying();
     }
     
     @Override

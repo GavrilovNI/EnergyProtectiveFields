@@ -21,12 +21,15 @@ public class ModMenuTypes
     public static final RegistryObject<MenuType<FieldControllerMenu>> FIELD_CONTROLLER_MENU = registerMenuType(FieldControllerMenu::new,
             "field_controller_menu");
     
-    public static final RegistryObject<MenuType<InfinityEnergyGeneratorMenu>> TEST_ENERGY_GENERATOR_MENU = registerMenuType(
+    public static final RegistryObject<MenuType<InfinityEnergyGeneratorMenu>> INFINITY_ENERGY_GENERATOR_MENU = registerMenuType(
             InfinityEnergyGeneratorMenu::new,
-            "test_energy_generator_menu");
+            "infinity_energy_generator_menu");
     
     public static final RegistryObject<MenuType<FieldProjectorMenu>> FIELD_PROJECTOR_MENU = registerMenuType(FieldProjectorMenu::new,
             "field_projector_menu");
+    
+    public static final RegistryObject<MenuType<ChunkLoadingTesterMenu>> CHUNK_TESTER_MENU = registerMenuType(ChunkLoadingTesterMenu::new,
+            "chunk_loading_tester_menu");
     
     private static <T extends AbstractContainerMenu>RegistryObject<MenuType<T>> registerMenuType(IContainerFactory<T> containerFactory, String id)
     {
@@ -42,7 +45,8 @@ public class ModMenuTypes
     public static void registerMenuScreens()
     {
         MenuScreens.register(ModMenuTypes.FIELD_CONTROLLER_MENU.get(), FieldControllerScreen::new);
-        MenuScreens.register(ModMenuTypes.TEST_ENERGY_GENERATOR_MENU.get(), InfinityEnergyGeneratorScreen::new);
+        MenuScreens.register(ModMenuTypes.INFINITY_ENERGY_GENERATOR_MENU.get(), InfinityEnergyGeneratorScreen::new);
         MenuScreens.register(ModMenuTypes.FIELD_PROJECTOR_MENU.get(), FieldProjectorScreen::new);
+        MenuScreens.register(ModMenuTypes.CHUNK_TESTER_MENU.get(), ChunkLoadingTesterScreen::new);
     }
 }

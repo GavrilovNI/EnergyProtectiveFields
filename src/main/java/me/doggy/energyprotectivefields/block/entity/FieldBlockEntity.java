@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
+import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.api.IFieldProjector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -7,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.world.ForgeChunkManager;
 import org.jetbrains.annotations.Nullable;
 
 public class FieldBlockEntity extends BlockEntity
@@ -21,9 +23,9 @@ public class FieldBlockEntity extends BlockEntity
     
     public void setProjectorPosition(@Nullable BlockPos blockPos)
     {
-        var oldProjector = getProjectorIfChunkIsLoaded();
+        var oldProjector = getProjector();
         projectorPosition = blockPos;
-        var newProjector = getProjectorIfChunkIsLoaded();
+        var newProjector = getProjector();
         if(oldProjector != newProjector)
         {
             if(oldProjector != null)
@@ -33,30 +35,19 @@ public class FieldBlockEntity extends BlockEntity
         }
     }
     
-    public <T extends BlockEntity> boolean isMyProjector(T projector)
+    public boolean hasProjector()
+    {
+        return projectorPosition != null;
+    }
+    
+    public <T extends IFieldProjector> boolean isMyProjector(T projector)
     {
         if(projectorPosition == null)
             return false;
         
         return projector instanceof IFieldProjector &&
                 projector.getLevel().equals(getLevel()) &&
-                projector.getBlockPos().equals(projectorPosition);
-    }
-    
-    @Nullable
-    public IFieldProjector getProjectorIfChunkIsLoaded()
-    {
-        if(projectorPosition == null)
-            return null;
-        if(level.hasChunk(SectionPos.blockToSectionCoord(projectorPosition.getX()), SectionPos.blockToSectionCoord(projectorPosition.getZ())))
-        {
-            var blockEntity = level.getBlockEntity(projectorPosition);
-            if(isMyProjector(blockEntity))
-                return (IFieldProjector)blockEntity;
-            else
-                onLostProjector();
-        }
-        return null;
+                projector.getPosition().equals(projectorPosition);
     }
     
     @Nullable
@@ -74,7 +65,7 @@ public class FieldBlockEntity extends BlockEntity
     protected void onLostProjector()
     {
         projectorPosition = null;
-        level.removeBlock(getBlockPos(), false);
+        EnergyProtectiveFields.LOGGER.warn("FieldBlockEntity(" + worldPosition.toShortString() + ") lost it's projector and was not removed.");
     }
     
     @Nullable

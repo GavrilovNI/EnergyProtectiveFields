@@ -27,7 +27,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.CapabilityEnergy;
@@ -148,10 +147,37 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         for(var blockPos : fields)
         {
             if(from.getEnergyToBuildField(blockPos) > to.getEnergyToBuildField(blockPos))
-            {
-                from.removeField(blockPos);
-                to.addField(blockPos);
-            }
+                transferField(blockPos, from, to);
+        }
+    }
+    
+    protected void transferField(BlockPos fieldPosition, IFieldProjector from, IFieldProjector to)
+    {
+        from.removeField(fieldPosition);
+        if(level.getBlockEntity(fieldPosition) instanceof FieldBlockEntity fieldBlock && fieldBlock.isMyProjector(from))
+            fieldBlock.setProjectorPosition(to.getPosition());
+        to.addField(fieldPosition);
+    }
+    
+    protected void distributeFieldsFrom(IFieldProjector fieldProjector)
+    {
+        var fields = fieldProjector.getAllFieldsInShape();
+        for(var fieldPosition : fields)
+        {
+            IFieldProjector newProjector = getBestProjectorToBuild(fieldPosition);
+            transferField(fieldPosition, fieldProjector, newProjector);
+        }
+        fieldProjector.clearFields();
+    }
+    
+    protected void redistributeFieldsForNew(IFieldProjector fieldProjector)
+    {
+        fieldProjector.clearFields();
+        for(var otherProjector : fieldProjectors)
+        {
+            if(otherProjector == fieldProjector)
+                continue;
+            redistributeFieldsBetween(otherProjector, fieldProjector);
         }
     }
     
@@ -201,17 +227,6 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             {
                 distributeField(blockPos);
             }
-        }
-    }
-    
-    protected void redistributeForNew(IFieldProjector fieldProjector)
-    {
-        fieldProjector.clearFields();
-        for(var otherProjector : fieldProjectors)
-        {
-            if(otherProjector == fieldProjector)
-                continue;
-            redistributeFieldsBetween(otherProjector, fieldProjector);
         }
     }
     
@@ -281,12 +296,15 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     }
     
     @Override
-    public void onDestroyed()
+    public void onDestroying()
     {
-        super.onDestroyed();
+        super.onDestroying();
         dropInventory();
         
         updateWorldFieldBounds();
+        
+        if(level instanceof ServerLevel serverLevel)
+            WorldLinks.get(serverLevel).removeLinksByController(this);
     }
     
     @Override
@@ -303,17 +321,16 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         return new FieldControllerMenu(pContainerId, pInventory, this);
     }
     
-    public void onProjectorDisabled(IFieldProjector projector)
+    public void onProjectorDisabled(IFieldProjector fieldProjector)
     {
-        if(projector == this)
+        if(fieldProjector == this)
             return;
         
-        if(fieldProjectors.contains(projector) == false)
+        if(fieldProjectors.contains(fieldProjector) == false)
             throw new IllegalArgumentException("this controller and projector aren't linked");
-        
-        var fields = projector.getAllFieldsInShape();
-        projector.clearFields();
-        distributeFields(fields);
+    
+    
+        distributeFieldsFrom(fieldProjector);
     }
     
     public void onProjectorEnabled(IFieldProjector projector)
@@ -324,7 +341,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(fieldProjectors.contains(projector) == false)
             throw new IllegalArgumentException("this controller and projector aren't linked");
         
-        redistributeForNew(projector);
+        redistributeFieldsForNew(projector);
     }
     
     @Nullable
@@ -396,9 +413,12 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         {
             if(level.getBlockEntity(blockPos) instanceof IFieldProjector fieldProjector)
             {
+                if(fieldProjectors.contains(fieldProjector))
+                    throw new IllegalArgumentException("this controller and projector are already linked");
+                
                 fieldProjectors.add(fieldProjector);
                 if(fieldProjector.isEnabled())
-                    redistributeForNew(fieldProjector);
+                    redistributeFieldsForNew(fieldProjector);
             }
         }
     }
@@ -408,10 +428,11 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     {
         if(level.getBlockEntity(blockPos) instanceof IFieldProjector fieldProjector)
         {
+            if(fieldProjectors.contains(fieldProjector) == false)
+                throw new IllegalArgumentException("this controller and projector aren't linked");
+            
             fieldProjectors.remove(fieldProjector);
-            var fields = fieldProjector.getAllFieldsInShape();
-            distributeFields(fields);
-            fieldProjector.clearFields();
+            distributeFieldsFrom(fieldProjector);
         }
     }
     

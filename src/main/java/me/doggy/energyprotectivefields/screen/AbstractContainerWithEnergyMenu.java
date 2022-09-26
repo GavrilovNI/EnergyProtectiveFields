@@ -33,7 +33,7 @@ public abstract class AbstractContainerWithEnergyMenu extends BaseItemInventoryM
         this.blockEntity = blockEntity;
     }
     
-    protected boolean isNeededToSave(IEnergyStorage energyStorage)
+    protected boolean isNeededToSend(IEnergyStorage energyStorage)
     {
         if(energyStorage == null)
             return false;
@@ -74,7 +74,7 @@ public abstract class AbstractContainerWithEnergyMenu extends BaseItemInventoryM
         super.broadcastChanges();
     
         var energyStorage = getEnergyStorage();
-        if(isNeededToSave(energyStorage))
+        if(isNeededToSend(energyStorage))
             sendEnergyDataToPlayer(energyStorage);
     }
     

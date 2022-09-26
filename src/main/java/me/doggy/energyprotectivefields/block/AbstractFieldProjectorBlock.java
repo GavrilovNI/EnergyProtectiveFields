@@ -41,7 +41,7 @@ public abstract class AbstractFieldProjectorBlock extends SwitchableEntityBlock
             if(pState.getBlock() != pNewState.getBlock())
             {
                 if(pLevel.getBlockEntity(pPos) instanceof IDestroyingHandler destroyingHandler)
-                    destroyingHandler.onDestroyed();
+                    destroyingHandler.onDestroying();
             }
         }
         super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);

@@ -1,7 +1,7 @@
 package me.doggy.energyprotectivefields.api;
 
-import me.doggy.energyprotectivefields.block.entity.FieldBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 
 import java.util.Collection;
 import java.util.Set;
@@ -24,6 +24,9 @@ public interface IFieldProjector extends IFieldStateListener
     
     void onControllerEnabled();
     void onControllerDisabled();
+    
+    Level getLevel();
+    BlockPos getPosition();
     
     Set<BlockPos> getAllFieldsInShape();
 }

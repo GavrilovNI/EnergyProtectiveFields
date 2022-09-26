@@ -2,5 +2,5 @@ package me.doggy.energyprotectivefields;
 
 public interface IDestroyingHandler
 {
-    void onDestroyed();
+    void onDestroying();
 }

@@ -29,7 +29,6 @@ public class EnergyProtectiveFields
     public static final String MOD_NAME = "Energy Protective Fields";
     
     public static final Logger LOGGER = LogUtils.getLogger();
-    private static final IEventBus EVENT_BUS = BusBuilder.builder().build();
     
     public EnergyProtectiveFields()
     {
@@ -83,10 +82,5 @@ public class EnergyProtectiveFields
     @SubscribeEvent
     public void onWorldLoad(WorldEvent.Save event)
     {
-    }
-    
-    public static IEventBus getEventBus()
-    {
-        return EVENT_BUS;
     }
 }

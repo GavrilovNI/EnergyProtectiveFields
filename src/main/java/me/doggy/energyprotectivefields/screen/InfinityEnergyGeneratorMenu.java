@@ -24,7 +24,7 @@ public class InfinityEnergyGeneratorMenu extends AbstractContainerWithEnergyMenu
     
     public InfinityEnergyGeneratorMenu(int pContainerId, Inventory inventory, BlockEntity blockEntity)
     {
-        super(ModMenuTypes.TEST_ENERGY_GENERATOR_MENU.get(), pContainerId, inventory, new Vec2i(8, 86), blockEntity);
+        super(ModMenuTypes.INFINITY_ENERGY_GENERATOR_MENU.get(), pContainerId, inventory, new Vec2i(8, 86), blockEntity);
         this.blockEntity = (InfinityEnergyGeneratorBlockEntity) blockEntity;
         this.level = inventory.player.level;
     }

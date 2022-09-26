@@ -9,8 +9,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraftforge.common.world.ForgeChunkManager;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
@@ -124,29 +127,39 @@ public class WorldLinks extends SavedData
         return nbt;
     }
     
+    @Nullable
     private FieldControllerBlockEntity getController(LinkInfo controllerInfo)
     {
-        if(level.hasChunkAt(controllerInfo.blockPos))
+        if(level.getBlockEntity(controllerInfo.blockPos) instanceof FieldControllerBlockEntity controller
+                && controller.getUUID().equals(controllerInfo.uuid))
         {
-            if(level.getBlockEntity(controllerInfo.blockPos) instanceof FieldControllerBlockEntity controller
-                    && controller.getUUID().equals(controllerInfo.uuid))
-            {
-                return controller;
-            }
+            return controller;
         }
         return null;
     }
     
+    public void removeLinksByController(FieldControllerBlockEntity controller)
+    {
+        var controllerPosition = controller.getBlockPos();
+        var linkedBlockPoses = controllerToOthers.removeAll(new LinkInfo(controllerPosition, controller.getUUID()));
+        
+        for(var position : linkedBlockPoses)
+        {
+            controller.onUnlinked(level, position);
+            
+            setDirty();
+        }
+    }
+    
     public void addLink(LinkInfo controllerInfo, BlockPos blockPos)
     {
-        if(controllerToOthers.containsEntry(controllerInfo, blockPos) == false)
+        var controller = getController(controllerInfo);
+        
+        if(controller != null && controllerToOthers.containsEntry(controllerInfo, blockPos) == false)
         {
             controllerToOthers.put(controllerInfo, blockPos);
-    
-            var controller = getController(controllerInfo);
-            if(controller != null)
-                controller.onLinked(level, blockPos);
-    
+            controller.onLinked(level, blockPos);
+            
             setDirty();
         }
     }

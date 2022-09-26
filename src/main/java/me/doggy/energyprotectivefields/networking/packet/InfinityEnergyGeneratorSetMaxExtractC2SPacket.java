@@ -23,7 +23,7 @@ public class InfinityEnergyGeneratorSetMaxExtractC2SPacket
         this(buf.readInt(), buf.readInt());
     }
     
-    public void toBytes(FriendlyByteBuf buf)
+    public void serialize(FriendlyByteBuf buf)
     {
         buf.writeInt(containerId);
         buf.writeInt(maxExtract);
