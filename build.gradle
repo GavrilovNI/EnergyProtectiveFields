@@ -10,7 +10,7 @@ buildscript {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
         classpath 'org.parchmentmc:librarian:1.+'
         classpath 'com.google.guava:guava:31.1-jre'
-        //classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
@@ -18,7 +18,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
-//apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'org.spongepowered.mixin'
 
 
 version = "${minecraftVersion}-${modVersion}"
@@ -55,7 +55,7 @@ minecraft {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', "${modId}"
 
-            //args '-mixin.config', "${modId}.mixin.json"
+            args '-mixin.config', "${modId}.mixin.json"
 
             mods {
                 "${modId}" {
@@ -73,7 +73,7 @@ minecraft {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', "${modId}"
 
-            //args '-mixin.config', "${modId}.mixin.json"
+            args '-mixin.config', "${modId}.mixin.json"
 
             mods {
                 "${modId}" {
@@ -103,7 +103,7 @@ minecraft {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', "${modId}"
 
-            //args '-mixin.config', "${modId}.mixin.json"
+            args '-mixin.config', "${modId}.mixin.json"
 
             mods {
                 "${modId}" {
@@ -120,7 +120,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            args '--mod', "${modId}", '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/'), //'-mixin.config', "${modId}.mixin.json"
+            args '--mod', "${modId}", '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/'), '-mixin.config', "${modId}.mixin.json"
 
             mods {
                 "${modId}" {
@@ -141,9 +141,9 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraftVersion}-${forgeVersion}"
 }
 
-//mixin {
-//    add sourceSets.main, "${modId}.mixin-refmap.json"
-//}
+mixin {
+    add sourceSets.main, "${modId}.mixin-refmap.json"
+}
 
 jar {
     var now = new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
@@ -158,7 +158,7 @@ jar {
                 "Implementation-Timestamp": now,
                 "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
-                //"MixinConfigs" : "${modId}.mixin.json",
+                "MixinConfigs" : "${modId}.mixin.json",
         ])
     }
 }

@@ -15,5 +15,6 @@ public class ModCommands
         
         FindControllersTestCommand.register(dispatcher);
         GetControllerBoundsCommand.register(dispatcher);
+        SetBlockForcedCommand.register(dispatcher);
     }
 }

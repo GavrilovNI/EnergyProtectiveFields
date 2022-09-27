@@ -8,6 +8,7 @@ import me.doggy.energyprotectivefields.api.IFieldProjector;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.utils.HashCounter;
 import me.doggy.energyprotectivefields.block.ModBlocks;
+import me.doggy.energyprotectivefields.data.WorldChunkChanges;
 import me.doggy.energyprotectivefields.data.WorldChunksLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -30,6 +31,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     protected final HashMap<BlockPos, Integer> cashedEnergyToBuild = new HashMap<>();
     
     private final HashCounter<ChunkPos> fieldsByChunkCounter = new HashCounter<>();
+    private final Map<BlockPos, Long> lastFailedAttemptsToCreateField = new HashMap<>();
     
     protected int totalEnergyNeededToSupport = 0;
     
@@ -60,30 +62,39 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         return level.isOutsideBuildHeight(position);
     }
     
-    protected boolean createFieldWithoutInitialization(BlockPos blockPos)
+    protected boolean createFieldWithoutInitialization(BlockPos fieldPosition, boolean forced)
     {
-        if(canBuildIn(blockPos) == false)
+        boolean shouldTryToCreate = forced || shouldTryToCreateField(fieldPosition);
+        
+        if(shouldTryToCreate == false)
             return false;
         
-        BetterEnergyStorage energyStorage = getEnergyStorage();
-        
-        int energyToBuild = getEnergyToBuildField(blockPos);
-        if(energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild)
+        boolean created = false;
+        if(canBuildIn(fieldPosition))
         {
-            boolean created = level.setBlock(blockPos, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
-            if(created)
+            BetterEnergyStorage energyStorage = getEnergyStorage();
+    
+            int energyToBuild = getEnergyToBuildField(fieldPosition);
+            if(energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild)
             {
-                cashedEnergyToBuild.remove(blockPos);
-                energyStorage.consumeEnergy(energyToBuild, false);
-                return true;
+                created = level.setBlock(fieldPosition, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
+                if(created)
+                {
+                    cashedEnergyToBuild.remove(fieldPosition);
+                    energyStorage.consumeEnergy(energyToBuild, false);
+                }
             }
         }
-        return false;
+        
+        if(created == false)
+            lastFailedAttemptsToCreateField.put(fieldPosition, level.getGameTime());
+        
+        return created;
     }
     
     protected boolean createField(BlockPos blockPos)
     {
-        boolean created = createFieldWithoutInitialization(blockPos);
+        boolean created = createFieldWithoutInitialization(blockPos, false);
         if(created)
             initializeField(blockPos);
         return created;
@@ -109,24 +120,26 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         if(isDestroyed && isMine == false)
             throw new IllegalStateException("projector is not the owner of this fieldBlockEntity");
         
-        BlockPos blockPos = fieldBlockEntity.getBlockPos();
-        var state = fields.getState(blockPos);
+        BlockPos fieldPosition = fieldBlockEntity.getBlockPos();
+        var state = fields.getState(fieldPosition);
         
         boolean wasSupporting = state == FieldSet.FieldState.Created || state == FieldSet.FieldState.RemovedFromShape;
         boolean isInShape = state != FieldSet.FieldState.Unknown && state != FieldSet.FieldState.RemovedFromShape;
         
-        fieldsToDestroy.remove(blockPos);
+        fieldsToDestroy.remove(fieldPosition);
         
         if(wasSupporting)
-            totalEnergyNeededToSupport -= getEnergyToSupportField(blockPos);
+            totalEnergyNeededToSupport -= getEnergyToSupportField(fieldPosition);
         
         if(isInShape)
-            fields.setState(blockPos, FieldSet.FieldState.NotCreated);
+            fields.setState(fieldPosition, FieldSet.FieldState.NotCreated);
         else
-            fields.remove(blockPos);
+            fields.remove(fieldPosition);
         
         if(state == FieldSet.FieldState.RemovedFromShape)
-            stopCountingFieldForChunkLoading(blockPos);
+            stopCountingFieldForChunkLoading(fieldPosition);
+        
+        lastFailedAttemptsToCreateField.remove(fieldPosition);
     }
     public void onFieldCreated(FieldBlockEntity fieldBlockEntity)
     {
@@ -156,6 +169,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         }
     
         cashedEnergyToBuild.remove(fieldPosition);
+        lastFailedAttemptsToCreateField.remove(fieldPosition);
     }
     
     protected void addChunkLoader(ChunkPos by)
@@ -208,6 +222,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         fieldsToDestroy.forEach(this::countFieldForChunkLoading);
         
         cashedEnergyToBuild.clear();
+        lastFailedAttemptsToCreateField.clear();
     }
     
     public void removeFields(Collection<BlockPos> positions)
@@ -306,20 +321,21 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         }
     }
     
-    private void removeFieldInternal(BlockPos blockPos)
+    private void removeFieldInternal(BlockPos fieldPosition)
     {
-        var state = fields.getState(blockPos);
+        var state = fields.getState(fieldPosition);
         if(state == FieldSet.FieldState.Created)
         {
-            fieldsToDestroy.add(blockPos);
-            fields.setState(blockPos, FieldSet.FieldState.RemovedFromShape);
+            fieldsToDestroy.add(fieldPosition);
+            fields.setState(fieldPosition, FieldSet.FieldState.RemovedFromShape);
         }
         else if(state != FieldSet.FieldState.Unknown)
         {
-            stopCountingFieldForChunkLoading(blockPos);
-            fields.remove(blockPos);
+            stopCountingFieldForChunkLoading(fieldPosition);
+            fields.remove(fieldPosition);
         }
-        cashedEnergyToBuild.remove(blockPos);
+        cashedEnergyToBuild.remove(fieldPosition);
+        lastFailedAttemptsToCreateField.remove(fieldPosition);
     }
     
     private void removeField(FieldSet.Iterator iterator)
@@ -337,6 +353,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
             iterator.remove();
         }
         cashedEnergyToBuild.remove(fieldPosition);
+        lastFailedAttemptsToCreateField.remove(fieldPosition);
     }
     
     @Override
@@ -372,12 +389,36 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         }
     }
     
+    protected boolean shouldTryToCreateField(BlockPos fieldPosition)
+    {
+        var lastAttempt = lastFailedAttemptsToCreateField.get(fieldPosition);
+    
+        if(lastAttempt == null)
+            return true;
+        else
+            return WorldChunkChanges.get((ServerLevel)level).isChunkUpdatedAfter(new ChunkPos(fieldPosition), lastAttempt);
+    }
+    
     protected void createFieldBlocks(int count)
     {
         var iterator = fields.iterator(FieldSet.FieldState.NotCreated);
         if(iterator.hasNext() == false)
         {
-            fields.changeState(FieldSet.FieldState.NotCreatedTwice, FieldSet.FieldState.NotCreated);
+            //TODO: test
+            //there are options below dependent on these
+            //option 1: (looks a little faster for field of cube radius = 64, 2176 not created fields, also looks more stable with 57937 not created fields)
+            iterator = fields.iterator(FieldSet.FieldState.NotCreatedTwice);
+            while(iterator.hasNext())
+            {
+                var blockPos = iterator.next();
+        
+                if(shouldTryToCreateField(blockPos))
+                    iterator.setState(FieldSet.FieldState.NotCreated);
+            }
+            //option 2:
+            //fields.changeState(FieldSet.FieldState.NotCreatedTwice, FieldSet.FieldState.NotCreated);
+            
+            
             iterator = fields.iterator(FieldSet.FieldState.NotCreated);
         }
         
@@ -394,12 +435,21 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
             }
             else
             {
-                boolean created = createFieldWithoutInitialization(blockPos);
-                count--;
+                //option 1:
+                boolean created = createFieldWithoutInitialization(blockPos, true);
+                
+                //option 2:
+                //boolean created = createFieldWithoutInitialization(blockPos, false);
+                
                 if(created)
+                {
+                    count--;
                     toInitialize.add(blockPos);
+                }
                 else
+                {
                     iterator.setState(FieldSet.FieldState.NotCreatedTwice);
+                }
             }
         }
         

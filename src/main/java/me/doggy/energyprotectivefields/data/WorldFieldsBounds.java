@@ -59,15 +59,35 @@ public class WorldFieldsBounds extends SavedData
         }
     }
     
+    public boolean hasControllersByChunk(ChunkPos chunkPos)
+    {
+        return chunkToController.get(chunkPos).isEmpty() == false;
+    }
+    
     public Set<BlockPos> getControllersByChunk(ChunkPos chunkPos)
     {
         return chunkToController.get(chunkPos).stream().collect(Collectors.toSet());
     }
     
+    protected void onRemovedAllControllersFromChunk(ChunkPos chunkPos)
+    {
+        WorldChunkChanges.get(level).onRemovedAllControllersFromChunk(chunkPos);
+    }
+    
     public void removeController(BlockPos blockPos)
     {
         setDirty();
+        
+        Set<ChunkPos> removedChunks = new HashSet<>();
+        for(var entry : chunkToController.asMap().entrySet())
+        {
+            var controllerPoses = entry.getValue();
+            if(controllerPoses.contains(blockPos) && controllerPoses.size() == 1)
+                removedChunks.add(entry.getKey());
+        }
         chunkToController.values().remove(blockPos);
+        for(var chunkPos : removedChunks)
+            onRemovedAllControllersFromChunk(chunkPos);
     }
     
     private static HashSet<ChunkPos> getChunksInBounds(Level level, BoundingBox boundingBox)

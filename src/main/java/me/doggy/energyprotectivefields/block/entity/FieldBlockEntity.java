@@ -58,14 +58,16 @@ public class FieldBlockEntity extends BlockEntity
         if(level.getBlockEntity(projectorPosition) instanceof IFieldProjector projector)
             return projector;
         else
-            onLostProjector();
+            onLostProjector(false);
         return null;
     }
     
-    protected void onLostProjector()
+    protected void onLostProjector(boolean destroy)
     {
         projectorPosition = null;
-        EnergyProtectiveFields.LOGGER.warn("FieldBlockEntity(" + worldPosition.toShortString() + ") lost it's projector and was not removed.");
+        EnergyProtectiveFields.LOGGER.warn("FieldBlockEntity(" + worldPosition.toShortString() + ") lost it's projector and was not removed." + (destroy ? " Destroying..." : "Keeping..."));
+        if(destroy)
+            level.removeBlock(worldPosition, false);
     }
     
     @Nullable
@@ -77,7 +79,7 @@ public class FieldBlockEntity extends BlockEntity
         if(projector != null)
             projector.onFieldCreated(this);
         else if(lostProjector)
-            onLostProjector();
+            onLostProjector(true);
     }
     
     @Override
@@ -95,7 +97,7 @@ public class FieldBlockEntity extends BlockEntity
         super.saveAdditional(pTag);
     
         if(projectorPosition != null)
-            pTag.put("projectorPos", NbtUtils.writeBlockPos(projectorPosition));
+            pTag.put("projector_pos", NbtUtils.writeBlockPos(projectorPosition));
     }
     
     @Override
@@ -103,9 +105,9 @@ public class FieldBlockEntity extends BlockEntity
     {
         super.load(pTag);
         
-        if(pTag.contains("projectorPos"))
+        if(pTag.contains("projector_pos"))
         {
-            projectorPosition = NbtUtils.readBlockPos(pTag.getCompound("projector-pos"));
+            projectorPosition = NbtUtils.readBlockPos(pTag.getCompound("projector_pos"));
         }
         else
         {
