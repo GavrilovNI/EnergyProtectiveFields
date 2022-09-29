@@ -136,13 +136,34 @@ public class WorldChunksLoader extends SavedData
     
     public void forceChunk(ChunkPos chunkPos, BlockPos blockLoader, BlockPos initiator)
     {
+        if(new ChunkPos(blockLoader).equals(chunkPos))
+            return;
+        
         var forcingInfo = new ForcingInfo(chunkPos, blockLoader);
         if(initiatorByInfo.containsEntry(forcingInfo, initiator))
             return;
     
         int alreadyForcingCount = initiatorByInfo.get(forcingInfo).size();
         if(alreadyForcingCount == 0)
-            ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, true, true);
+        {
+            boolean forced = ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, true, true);
+            if(forced)
+            {
+                EnergyProtectiveFields.LOGGER.debug("Forced chunk" + chunkPos +
+                        " with loader at (" + blockLoader.toShortString() +
+                        ")" + new ChunkPos(blockLoader) +
+                        " and initiator at (" + initiator.toShortString() +
+                        ")" + new ChunkPos(initiator));
+            }
+            else
+            {
+                EnergyProtectiveFields.LOGGER.info("Couldn't force chunk " + chunkPos +
+                        " with loader at (" + blockLoader.toShortString() +
+                        ")" + new ChunkPos(blockLoader) +
+                        " and initiator at (" + initiator.toShortString() +
+                        ")" + new ChunkPos(initiator));
+            }
+        }
     
         initiatorByInfo.put(forcingInfo, initiator);
         setDirty();
@@ -156,7 +177,25 @@ public class WorldChunksLoader extends SavedData
     
         int leftCount = initiatorByInfo.get(forcingInfo).size();
         if(leftCount == 1)
-            ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, false, true);
+        {
+            boolean stopped = ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, false, true);
+            if(stopped)
+            {
+                EnergyProtectiveFields.LOGGER.debug("Stopped forcing chunk " + chunkPos +
+                        " with loader at (" + blockLoader.toShortString() +
+                        ")" + new ChunkPos(blockLoader) +
+                        " and initiator at (" + initiator.toShortString() +
+                        ")" + new ChunkPos(initiator));
+            }
+            else
+            {
+                EnergyProtectiveFields.LOGGER.info("Couldn't stop forcing chunk " + chunkPos +
+                        " with loader at (" + blockLoader.toShortString() +
+                        ")" + new ChunkPos(blockLoader) +
+                        " and initiator at (" + initiator.toShortString() +
+                        ")" + new ChunkPos(initiator));
+            }
+        }
         
         initiatorByInfo.remove(forcingInfo, initiator);
         setDirty();

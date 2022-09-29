@@ -47,10 +47,4 @@ public class InfinityEnergyGeneratorMenu extends AbstractContainerWithEnergyMenu
         return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()), pPlayer, ModBlocks.INFINITY_ENERGY_GENERATOR.get());
     
     }
-    
-    @Override
-    public int getSlotsCount()
-    {
-        return 0;
-    }
 }

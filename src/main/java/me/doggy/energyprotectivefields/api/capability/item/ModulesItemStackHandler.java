@@ -51,8 +51,7 @@ public class ModulesItemStackHandler extends ItemStackHandler implements IHaveDi
     public <T extends IModule> ModuleInfo<T> getModuleInfo(int slot, Class<T> clazz)
     {
         var moduleStack = getStackInSlot(slot);
-        var module = ItemStackConverter.getStackAs(moduleStack, clazz);
-        return module == null ? null : new ModuleInfo<T>(module, moduleStack.getCount(), getSlotDirection(slot));
+        return ModuleInfo.get(moduleStack, clazz, getSlotDirection(slot));
     }
     
     public <T extends IModule> ArrayList<ModuleInfo<T>> getModulesInfo(Class<T> clazz)

@@ -2,6 +2,7 @@ package me.doggy.energyprotectivefields.api;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.Collection;
 import java.util.Set;
@@ -29,4 +30,7 @@ public interface IFieldProjector extends IFieldStateListener
     BlockPos getPosition();
     
     Set<BlockPos> getAllFieldsInShape();
+    
+    void clearModules();
+    void setCamouflage(BlockState blockState);
 }

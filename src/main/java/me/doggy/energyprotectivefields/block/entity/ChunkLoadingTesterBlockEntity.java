@@ -3,16 +3,20 @@ package me.doggy.energyprotectivefields.block.entity;
 import me.doggy.energyprotectivefields.api.utils.MoreNbtUtils;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.networking.NetworkManager;
-import me.doggy.energyprotectivefields.networking.packet.ChunkLoadingTesterSetRenderingStateS2CPacket;
 import me.doggy.energyprotectivefields.screen.ChunkLoadingTesterMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -35,7 +39,7 @@ public class ChunkLoadingTesterBlockEntity extends BlockEntity implements MenuPr
     
     private ChunkPos centerChunk = null;
     private Map<BlockPos, BlockState> oldBlockStates = null;
-    private BlockState blockStateToRender = ModBlocks.CHUNK_TESTER.get().defaultBlockState();
+    private BlockState renderingState = ModBlocks.CHUNK_TESTER.get().defaultBlockState();
     
     public ChunkLoadingTesterBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
@@ -92,20 +96,63 @@ public class ChunkLoadingTesterBlockEntity extends BlockEntity implements MenuPr
         }
     }
     
-    public BlockState getBlockStateToRender()
+    public BlockState getRenderingState()
     {
-        return blockStateToRender;
+        return renderingState;
     }
     
-    public void setBlockStateToRender(BlockState blockState)
+    public void setRenderingState(BlockState blockState)
     {
-        blockStateToRender = blockState;
+        if(renderingState.equals(blockState) == false)
+        {
+            renderingState = blockState;
+            if(level instanceof ServerLevel serverLevel)
+            {
+                var chunkPos = new ChunkPos(worldPosition);
+                var chunkMap = serverLevel.getChunkSource().chunkMap;
+                var players = chunkMap.getPlayers(chunkPos, false);
+                for(var player : players)
+                    player.connection.send(getUpdatePacket());
+            }
+        }
     }
     
-    public void onDestroyed()
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket()
+    {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt)
+    {
+        CompoundTag nbt = pkt.getTag();
+        if (nbt != null) {
+            handleUpdateTag(pkt.getTag());
+        }
+    }
+    
+    @Override
+    public CompoundTag getUpdateTag()
+    {
+        CompoundTag nbt = super.getUpdateTag();
+        nbt.put("rendering_state", NbtUtils.writeBlockState(renderingState));
+        return nbt;
+    }
+    
+    @Override
+    public void handleUpdateTag(CompoundTag nbt)
+    {
+        setRenderingState(NbtUtils.readBlockState(nbt.getCompound("rendering_state")));
+    }
+    
+    @Override
+    public void setRemoved()
     {
         if(level.isClientSide() == false)
             restoreOldBlockStates();
+        super.setRemoved();
     }
     
     @Override
@@ -206,8 +253,7 @@ public class ChunkLoadingTesterBlockEntity extends BlockEntity implements MenuPr
             throw new IllegalArgumentException("X or Z out of radius.");
         if(x == 0 && z == 0)
         {
-            blockStateToRender = blockState;
-            NetworkManager.sendToAllPlayers(new ChunkLoadingTesterSetRenderingStateS2CPacket(this), level.getChunkAt(worldPosition));
+            setRenderingState(blockState);
         }
         else
         {

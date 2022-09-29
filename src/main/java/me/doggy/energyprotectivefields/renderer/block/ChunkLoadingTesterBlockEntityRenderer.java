@@ -26,7 +26,7 @@ public class ChunkLoadingTesterBlockEntityRenderer implements BlockEntityRendere
         var lightBelow = pBlockEntity.getLevel().getBrightness(LightLayer.SKY, pBlockEntity.getBlockPos().above());
         var light = Math.max(lightAbove, lightBelow);
         var brightness = 15;
-        dispatcher.renderSingleBlock(pBlockEntity.getBlockStateToRender(), pPoseStack, pBufferSource, (light << 20) + (brightness << 4), pPackedOverlay,
+        dispatcher.renderSingleBlock(pBlockEntity.getRenderingState(), pPoseStack, pBufferSource, (light << 20) + (brightness << 4), pPackedOverlay,
                 EmptyModelData.INSTANCE);
     }
 }

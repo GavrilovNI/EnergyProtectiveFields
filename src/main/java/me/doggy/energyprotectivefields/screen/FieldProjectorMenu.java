@@ -5,12 +5,15 @@ import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.block.entity.FieldProjectorBlockEntity;
+import me.doggy.energyprotectivefields.item.module.field.CamouflageModuleItem;
 import me.doggy.energyprotectivefields.screen.slot.ModuleSlot;
 import me.doggy.energyprotectivefields.screen.slot.SlotItemHandlerWithNotifier;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -44,11 +47,5 @@ public class FieldProjectorMenu extends AbstractContainerWithEnergyMenu
     public boolean stillValid(Player pPlayer)
     {
         return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()), pPlayer, ModBlocks.FIELD_PROJECTOR.get());
-    }
-    
-    @Override
-    public int getSlotsCount()
-    {
-        return FieldProjectorBlockEntity.ITEM_CAPABILITY_SIZE;
     }
 }

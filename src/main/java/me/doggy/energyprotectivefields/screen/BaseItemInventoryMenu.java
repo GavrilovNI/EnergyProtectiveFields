@@ -3,6 +3,7 @@ package me.doggy.energyprotectivefields.screen;
 import me.doggy.energyprotectivefields.api.utils.Vec2i;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -10,13 +11,12 @@ import org.jetbrains.annotations.Nullable;
 
 public abstract class BaseItemInventoryMenu extends BetterMenu
 {
-    protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory inventory, Vec2i playerInventoryStart, Vec2i playerHotBarStart)
+    protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory playerInventory, Vec2i playerInventoryStart, Vec2i playerHotBarStart)
     {
         super(pMenuType, pContainerId);
-        checkContainerSize(inventory, 36);
     
-        addPlayerHotbar(inventory, playerHotBarStart.getX(), playerHotBarStart.getY());
-        addPlayerInventory(inventory, playerInventoryStart.getX(), playerInventoryStart.getY());
+        addPlayerHotbar(playerInventory, playerHotBarStart.getX(), playerHotBarStart.getY());
+        addPlayerInventory(playerInventory, playerInventoryStart.getX(), playerInventoryStart.getY());
     }
     
     protected BaseItemInventoryMenu(@Nullable MenuType<?> pMenuType, int pContainerId, Inventory playerInventory, Vec2i playerInventoryStart)
@@ -29,42 +29,51 @@ public abstract class BaseItemInventoryMenu extends BetterMenu
     private static final int PLAYER_INVENTORY_COLUMN_COUNT = 9;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = PLAYER_INVENTORY_COLUMN_COUNT * PLAYER_INVENTORY_ROW_COUNT;
     private static final int VANILLA_SLOT_COUNT = HOTBAR_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT;
-    private static final int VANILLA_FIRST_SLOT_INDEX = 0;
-    private static final int THIS_INVENTORY_FIRST_SLOT_INDEX = VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
-    
-    public abstract int getSlotsCount();
-    
     
     @Override
     public ItemStack quickMoveStack(Player pPLayer, int pIndex)
     {
         Slot sourceSlot = slots.get(pIndex);
-        ItemStack sourceStack = sourceSlot.getItem();
+        int countToTake = sourceSlot.getItem().getCount();
+        ItemStack sourceStack = sourceSlot.safeTake(countToTake, countToTake, pPLayer);
         ItemStack sourceStackCopy = sourceStack.copy();
         
-        boolean fromPlayerInventory = pIndex < VANILLA_FIRST_SLOT_INDEX + VANILLA_SLOT_COUNT;
+        boolean fromPlayerInventory = pIndex < VANILLA_SLOT_COUNT;
         
         boolean moved;
         
-        int totalSlotsCount = THIS_INVENTORY_FIRST_SLOT_INDEX + getSlotsCount();
+        int startIndex;
+        int endIndex;
         
         if(fromPlayerInventory)
         {
-            moved = moveItemStackTo(sourceStack, THIS_INVENTORY_FIRST_SLOT_INDEX, totalSlotsCount, false);
+            startIndex = VANILLA_SLOT_COUNT;
+            endIndex = slots.size();
         }
         else
         {
-            moved = moveItemStackTo(sourceStack, VANILLA_FIRST_SLOT_INDEX, THIS_INVENTORY_FIRST_SLOT_INDEX, false);
+            startIndex = 0;
+            endIndex = VANILLA_SLOT_COUNT;
         }
         
+        moved = moveItemStackTo(sourceStack, startIndex, endIndex, false);
+    
+        var currentItem = sourceSlot.getItem();
+        if(currentItem.isEmpty())
+            currentItem = sourceStack;
+        else if(currentItem.is(sourceStack.getItem()))
+            currentItem.setCount(currentItem.getCount() + sourceStack.getCount());
+        else
+            pPLayer.drop(sourceStack, true);
+    
+        sourceSlot.set(currentItem);
+    
+        if (sourceStack.getCount() == 0)
+            sourceSlot.set(ItemStack.EMPTY);
+    
         if(moved)
         {
-            if (sourceStack.getCount() == 0)
-                sourceSlot.set(ItemStack.EMPTY);
-            else
-                sourceSlot.setChanged();
-            
-            sourceSlot.onTake(pPLayer, sourceStack);
+            sourceSlot.onTake(pPLayer, new ItemStack(sourceStackCopy.getItem(), sourceStackCopy.getCount() - sourceStack.getCount()));
             return sourceStackCopy;
         }
         else

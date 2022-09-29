@@ -31,6 +31,9 @@ public class ModMenuTypes
     public static final RegistryObject<MenuType<ChunkLoadingTesterMenu>> CHUNK_TESTER_MENU = registerMenuType(ChunkLoadingTesterMenu::new,
             "chunk_loading_tester_menu");
     
+    public static final RegistryObject<MenuType<CamouflageModuleMenu>> CAMOUFLAGE_MODULE_MENU = registerMenuType(CamouflageModuleMenu::new,
+            "camouflage_module_menu");
+    
     private static <T extends AbstractContainerMenu>RegistryObject<MenuType<T>> registerMenuType(IContainerFactory<T> containerFactory, String id)
     {
         return MENU_TYPES.register(id, () -> IForgeMenuType.create(containerFactory));
@@ -48,5 +51,6 @@ public class ModMenuTypes
         MenuScreens.register(ModMenuTypes.INFINITY_ENERGY_GENERATOR_MENU.get(), InfinityEnergyGeneratorScreen::new);
         MenuScreens.register(ModMenuTypes.FIELD_PROJECTOR_MENU.get(), FieldProjectorScreen::new);
         MenuScreens.register(ModMenuTypes.CHUNK_TESTER_MENU.get(), ChunkLoadingTesterScreen::new);
+        MenuScreens.register(ModMenuTypes.CAMOUFLAGE_MODULE_MENU.get(), CamouflageModuleScreen::new);
     }
 }

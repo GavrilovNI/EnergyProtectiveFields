@@ -1,28 +1,30 @@
 package me.doggy.energyprotectivefields.api;
 
 import me.doggy.energyprotectivefields.api.module.IModule;
+import me.doggy.energyprotectivefields.api.utils.ItemStackConverter;
 import net.minecraft.core.Direction;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 public class ModuleInfo<T extends IModule>
 {
+    private final ItemStack itemStack;
     private final T module;
-    private final int count;
     @Nullable
     private final Direction slotDirection;
     
-    public ModuleInfo(T module, int count, @Nullable Direction slotDirection)
+    @Nullable
+    public static <T extends IModule> ModuleInfo<T> get(ItemStack itemStack, Class<T> clazz, @Nullable Direction slotDirection)
     {
-        if(count <= 0)
-            throw new IllegalArgumentException("Count should be positive.");
-        this.module = module;
-        this.count = count;
-        this.slotDirection = slotDirection;
+        var module = ItemStackConverter.getStackAs(itemStack, clazz);
+        return module == null ? null : new ModuleInfo<>(itemStack, module, slotDirection);
     }
     
-    public ModuleInfo(T module, int count)
+    protected ModuleInfo(ItemStack itemStack, T module, @Nullable Direction slotDirection)
     {
-        this(module, count, null);
+        this.itemStack = itemStack.copy();
+        this.module = module;
+        this.slotDirection = slotDirection;
     }
     
     public T getModule()
@@ -32,7 +34,12 @@ public class ModuleInfo<T extends IModule>
     
     public int getCount()
     {
-        return count;
+        return itemStack.getCount();
+    }
+    
+    public ItemStack getItemStack()
+    {
+        return itemStack.copy();
     }
     
     @Nullable

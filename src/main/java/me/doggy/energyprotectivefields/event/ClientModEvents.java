@@ -3,6 +3,7 @@ package me.doggy.energyprotectivefields.event;
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.block.entity.ModBlockEntities;
 import me.doggy.energyprotectivefields.renderer.block.ChunkLoadingTesterBlockEntityRenderer;
+import me.doggy.energyprotectivefields.renderer.block.FieldBlockEntityRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -15,5 +16,6 @@ public class ClientModEvents
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event)
     {
         event.registerBlockEntityRenderer(ModBlockEntities.CHUNK_TESTER.get(), ChunkLoadingTesterBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.FIELD_BLOCK.get(), FieldBlockEntityRenderer::new);
     }
 }

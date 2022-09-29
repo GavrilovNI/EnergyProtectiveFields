@@ -14,7 +14,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public class NetworkManager
 {
-    public static final int CURRENT_MAJOR_VERSION = 2;
+    public static final int CURRENT_MAJOR_VERSION = 3;
     public static final int CURRENT_MINOR_VERSION = 0;
     
     private static SimpleChannel INSTANCE;
@@ -76,12 +76,6 @@ public class NetworkManager
                 .decoder(InfinityEnergyGeneratorSetMaxExtractC2SPacket::new)
                 .encoder(InfinityEnergyGeneratorSetMaxExtractC2SPacket::serialize)
                 .consumer(InfinityEnergyGeneratorSetMaxExtractC2SPacket::handle)
-                .add();
-        
-        INSTANCE.messageBuilder(ChunkLoadingTesterSetRenderingStateS2CPacket.class, 2, NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(ChunkLoadingTesterSetRenderingStateS2CPacket::new)
-                .encoder(ChunkLoadingTesterSetRenderingStateS2CPacket::serialize)
-                .consumer(ChunkLoadingTesterSetRenderingStateS2CPacket::handle)
                 .add();
     
         INSTANCE.messageBuilder(ChunkLoadingTesterSetSettingsS2CPacket.class, 3, NetworkDirection.PLAY_TO_CLIENT)

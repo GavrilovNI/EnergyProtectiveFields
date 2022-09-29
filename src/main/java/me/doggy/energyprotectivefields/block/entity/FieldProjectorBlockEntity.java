@@ -179,11 +179,11 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     }
     
     @Override
-    public void onDestroying()
+    public void setRemoved()
     {
         unlink();
         dropInventory();
-        super.onDestroying();
+        super.setRemoved();
     }
     
     @Override

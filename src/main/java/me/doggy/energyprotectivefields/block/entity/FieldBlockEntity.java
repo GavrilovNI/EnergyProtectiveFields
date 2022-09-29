@@ -2,19 +2,25 @@ package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.api.IFieldProjector;
+import me.doggy.energyprotectivefields.block.FieldBlock;
+import me.doggy.energyprotectivefields.block.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.world.ForgeChunkManager;
 import org.jetbrains.annotations.Nullable;
 
 public class FieldBlockEntity extends BlockEntity
 {
     private boolean lostProjector = false;
     private BlockPos projectorPosition = null;
+    
+    private BlockState camouflage = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
     
     public FieldBlockEntity(BlockPos pWorldPosition, BlockState pBlockState)
     {
@@ -23,9 +29,9 @@ public class FieldBlockEntity extends BlockEntity
     
     public void setProjectorPosition(@Nullable BlockPos blockPos)
     {
-        var oldProjector = getProjector();
+        var oldProjector = getProjectorIfLoaded();
         projectorPosition = blockPos;
-        var newProjector = getProjector();
+        var newProjector = getProjectorIfLoaded();
         if(oldProjector != newProjector)
         {
             if(oldProjector != null)
@@ -33,6 +39,76 @@ public class FieldBlockEntity extends BlockEntity
             if(newProjector != null)
                 newProjector.onFieldCreated(this);
         }
+    }
+    
+    public BlockState getCamouflage()
+    {
+        return camouflage;
+    }
+    
+    public void setCamouflage(BlockState camouflage)
+    {
+        if(camouflage.isAir())
+            camouflage = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
+        
+        if(this.camouflage.equals(camouflage) == false)
+        {
+            this.camouflage = camouflage;
+            setChanged();
+        }
+    
+        boolean renderingItself = camouflage.equals(ModBlocks.FIELD_BLOCK.get().defaultBlockState());
+        var blockState = level.getBlockState(worldPosition);
+        if(blockState.hasProperty(FieldBlock.RENDERING_ITSELF) && blockState.getValue(FieldBlock.RENDERING_ITSELF) != renderingItself)
+            level.setBlock(worldPosition, blockState.setValue(FieldBlock.RENDERING_ITSELF, renderingItself), 2+8+16+32);
+    }
+    
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket()
+    {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+    
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt)
+    {
+        CompoundTag nbt = pkt.getTag();
+        if (nbt != null) {
+            handleUpdateTag(pkt.getTag());
+        }
+    }
+    
+    @Override
+    public CompoundTag getUpdateTag()
+    {
+        CompoundTag nbt = super.getUpdateTag();
+        nbt.put("camouflage", NbtUtils.writeBlockState(camouflage));
+        return nbt;
+    }
+    
+    @Override
+    public void handleUpdateTag(CompoundTag nbt)
+    {
+        setCamouflage(NbtUtils.readBlockState(nbt.getCompound("camouflage")));
+    }
+    
+    @Override
+    public CompoundTag serializeNBT()
+    {
+        return super.serializeNBT();
+    }
+    
+    @Override
+    public void deserializeNBT(CompoundTag nbt)
+    {
+        super.deserializeNBT(nbt);
+    }
+    
+    @Override
+    public CompoundTag getTileData()
+    {
+        return super.getTileData();
     }
     
     public boolean hasProjector()
@@ -51,14 +127,17 @@ public class FieldBlockEntity extends BlockEntity
     }
     
     @Nullable
-    public IFieldProjector getProjector()
+    public IFieldProjector getProjectorIfLoaded()
     {
         if(projectorPosition == null)
             return null;
-        if(level.getBlockEntity(projectorPosition) instanceof IFieldProjector projector)
-            return projector;
-        else
-            onLostProjector(false);
+        if(level.isLoaded(worldPosition))
+        {
+            if(level.getBlockEntity(projectorPosition) instanceof IFieldProjector projector)
+                return projector;
+            else
+                onLostProjector(false);
+        }
         return null;
     }
     
@@ -75,18 +154,19 @@ public class FieldBlockEntity extends BlockEntity
     public void onLoad()
     {
         super.onLoad();
-        var projector = getProjector();
+        var projector = getProjectorIfLoaded();
         if(projector != null)
             projector.onFieldCreated(this);
         else if(lostProjector)
             onLostProjector(true);
+        setCamouflage(camouflage);
     }
     
     @Override
     public void setRemoved()
     {
         super.setRemoved();
-        var projector = getProjector();
+        var projector = getProjectorIfLoaded();
         if(projector != null)
             projector.onFieldDestroyed(this);
     }
@@ -98,6 +178,8 @@ public class FieldBlockEntity extends BlockEntity
     
         if(projectorPosition != null)
             pTag.put("projector_pos", NbtUtils.writeBlockPos(projectorPosition));
+        if(getBlockState().getValue(FieldBlock.RENDERING_ITSELF) == false)
+            pTag.put("camouflage", NbtUtils.writeBlockState(camouflage));
     }
     
     @Override
@@ -114,6 +196,12 @@ public class FieldBlockEntity extends BlockEntity
             projectorPosition = null;
             lostProjector = true;
         }
+        
+        if(pTag.contains("camouflage"))
+            camouflage = NbtUtils.readBlockState(pTag.getCompound("camouflage"));
+        else
+            camouflage = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
+        
     }
     
 }

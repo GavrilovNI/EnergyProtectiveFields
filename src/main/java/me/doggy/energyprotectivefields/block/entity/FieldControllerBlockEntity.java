@@ -3,6 +3,7 @@ package me.doggy.energyprotectivefields.block.entity;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
+import me.doggy.energyprotectivefields.api.module.IProjectorModule;
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
@@ -48,6 +49,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private Set<BlockPos> shapePositions = new HashSet<>();
     private ShapeBuilder currentShapeBuilder = null;
     
+    private boolean inventoryChanged = false;
+    
     private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
         @Override
@@ -55,10 +58,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         {
             setChanged();
             if(level.isClientSide() == false)
-            {
-                updateShape();
-                updateEnergyStorage(getModulesInfo(IEnergyModule.class));
-            }
+                inventoryChanged = true;
         }
     };
     
@@ -80,6 +80,32 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         super(ModBlockEntities.FIELD_CONTROLLER.get(), pWorldPosition, pBlockState, defaultEnergyStorage);
         uuid = UUID.randomUUID();
         fieldProjectors.add(this);
+    }
+    
+    protected void onInventoryChanged()
+    {
+        updateShape();
+        updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
+        applyModulesToProjectors();
+        inventoryChanged = false;
+    }
+    
+    protected ArrayList<ModuleInfo<IProjectorModule>> getProjectorModules()
+    {
+        return itemStackHandler.getModulesInfo(IProjectorModule.class);
+    }
+    
+    protected void applyModulesToProjector(IFieldProjector projector)
+    {
+        projector.clearModules();
+        for(var moduleInfo : getProjectorModules())
+            moduleInfo.getModule().apply(moduleInfo.getItemStack(), projector);
+    }
+    
+    protected void applyModulesToProjectors()
+    {
+        for(var projector : fieldProjectors)
+            applyModulesToProjector(projector);
     }
     
     @Nullable
@@ -223,7 +249,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         for(var blockPos : shapePositions)
         {
             if(level.getBlockEntity(blockPos) instanceof FieldBlockEntity fieldBlockEntity &&
-                    fieldProjectors.contains(fieldBlockEntity.getProjector()))
+                    fieldProjectors.contains(fieldBlockEntity.getProjectorIfLoaded()))
             {
                 distributeField(blockPos);
             }
@@ -296,15 +322,16 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     }
     
     @Override
-    public void onDestroying()
+    public void setRemoved()
     {
-        super.onDestroying();
         dropInventory();
-        
+    
         updateWorldFieldBounds();
-        
+    
         if(level instanceof ServerLevel serverLevel)
             WorldLinks.get(serverLevel).removeLinksByController(this);
+        
+        super.setRemoved();
     }
     
     @Override
@@ -361,9 +388,9 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                 if(level.getBlockEntity(position) instanceof IFieldProjector fieldProjector)
                     fieldProjectors.add(fieldProjector);
             }
-            updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
             
-            updateShape();
+            onInventoryChanged();
+            
             updateFieldBlockStatesFromWorldByShape();
         }
     }
@@ -419,6 +446,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                 fieldProjectors.add(fieldProjector);
                 if(fieldProjector.isEnabled())
                     redistributeFieldsForNew(fieldProjector);
+                applyModulesToProjector(fieldProjector);
             }
         }
     }
@@ -433,12 +461,15 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             
             fieldProjectors.remove(fieldProjector);
             distributeFieldsFrom(fieldProjector);
+            fieldProjector.clearModules();
         }
     }
     
     @Override
     public void serverTick(ServerLevel level, BlockPos blockPos, BlockState blockState)
     {
+        if(inventoryChanged)
+            onInventoryChanged();
         super.serverTick(level, blockPos, blockState);
         energyStorage.clearStats();
     }

@@ -68,10 +68,4 @@ public class FieldControllerMenu extends AbstractContainerWithEnergyMenu
     {
         return stillValid(ContainerLevelAccess.create(level, blockEntity.getBlockPos()), pPlayer, ModBlocks.FIELD_CONTROLLER.get());
     }
-    
-    @Override
-    public int getSlotsCount()
-    {
-        return FieldControllerItemStackHandler.SIZE;
-    }
 }

@@ -71,6 +71,10 @@ public class ModItems
             new TubeModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
     );
     
+    public static final RegistryObject<Item> CAMOUFLAGE_MODULE = ITEMS.register("camouflage_module", () ->
+            new CamouflageModuleItem(new Item.Properties().tab(ModCreativeModeTab.ENERGY_PROTECTIVE_FIELDS_TAB))
+    );
+    
     public static void register(IEventBus eventBus)
     {
         ITEMS.register(eventBus);

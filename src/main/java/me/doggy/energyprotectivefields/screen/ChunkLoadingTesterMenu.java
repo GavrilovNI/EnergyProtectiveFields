@@ -115,10 +115,4 @@ public class ChunkLoadingTesterMenu extends BaseItemInventoryMenu
         super.sendAllDataToRemote();
         sendEnergyDataToPlayer();
     }
-    
-    @Override
-    public int getSlotsCount()
-    {
-        return 0;
-    }
 }

@@ -1,6 +1,5 @@
 package me.doggy.energyprotectivefields.block.entity;
 
-import me.doggy.energyprotectivefields.IDestroyingHandler;
 import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
@@ -19,7 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
 import java.util.function.Predicate;
 
-public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IDestroyingHandler, IServerTickable
+public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IServerTickable
 {
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -33,11 +32,26 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     private final HashCounter<ChunkPos> fieldsByChunkCounter = new HashCounter<>();
     private final Map<BlockPos, Long> lastFailedAttemptsToCreateField = new HashMap<>();
     
+    private BlockState camouflageBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
+    
     protected int totalEnergyNeededToSupport = 0;
     
     public AbstractFieldProjectorBlockEntity(BlockEntityType<?> pType, BlockPos pWorldPosition, BlockState pBlockState, BetterEnergyStorage defaultEnergyStorage)
     {
         super(pType, pWorldPosition, pBlockState, defaultEnergyStorage);
+    }
+    
+    @Override
+    public void clearModules()
+    {
+        setCamouflage(ModBlocks.FIELD_BLOCK.get().defaultBlockState());
+    }
+    
+    public void setCamouflage(BlockState blockState)
+    {
+        this.camouflageBlockState = blockState;
+        for(var field : fields.getFields(FieldSet.FieldState.Created))
+            ((FieldBlockEntity)level.getBlockEntity(field)).setCamouflage(camouflageBlockState);
     }
     
     public abstract boolean isEnabled();
@@ -103,9 +117,14 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     protected void initializeField(BlockPos blockPos)
     {
         if(level.getBlockEntity(blockPos) instanceof FieldBlockEntity fieldBlockEntity)
+        {
             fieldBlockEntity.setProjectorPosition(worldPosition);
+            fieldBlockEntity.setCamouflage(camouflageBlockState);
+        }
         else
+        {
             throw new IllegalStateException("FieldBlock not found in blockPos");
+        }
     }
     
     public void onFieldDestroyed(FieldBlockEntity fieldBlockEntity)
@@ -469,13 +488,15 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         destroyRequestedFields(fieldsToDestroy.size());
     }
     
-    public void onDestroying()
+    @Override
+    public void setRemoved()
     {
         if(level.isClientSide() == false)
         {
             destroyAllCreatedFieldsInstantly(); // TODO: should not remove instantly
             removeAllChunkLoaders();
         }
+        super.setRemoved();
     }
     
     @Override

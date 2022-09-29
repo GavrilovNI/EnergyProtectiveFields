@@ -1,6 +1,5 @@
 package me.doggy.energyprotectivefields.block;
 
-import me.doggy.energyprotectivefields.IDestroyingHandler;
 import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
 import me.doggy.energyprotectivefields.block.entity.FieldProjectorBlockEntity;
@@ -18,13 +17,13 @@ public class FieldProjectorBlock extends AbstractFieldProjectorBlock
     }
     
     @Override
-    public <T extends BlockEntity & ISwitchingHandler & IDestroyingHandler & IServerTickable> T createBlockEntity(BlockPos pPos, BlockState pState)
+    public <T extends BlockEntity & ISwitchingHandler & IServerTickable> T createBlockEntity(BlockPos pPos, BlockState pState)
     {
         return (T)new FieldProjectorBlockEntity(pPos, pState);
     }
     
     @Override
-    public <T extends BlockEntity & ISwitchingHandler & IDestroyingHandler & IServerTickable> BlockEntityType<T> getRegisteredBlockEntity()
+    public <T extends BlockEntity & ISwitchingHandler & IServerTickable> BlockEntityType<T> getRegisteredBlockEntity()
     {
         return (BlockEntityType<T>)ModBlockEntities.FIELD_PROJECTOR.get();
     }

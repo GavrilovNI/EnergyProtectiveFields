@@ -40,17 +40,6 @@ public class ChunkLoadingTesterBlock extends BaseEntityBlock
     }
     
     @Override
-    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving)
-    {
-        if(pState.getBlock() != pNewState.getBlock())
-        {
-            if(pLevel.getBlockEntity(pPos) instanceof ChunkLoadingTesterBlockEntity chunkTester)
-                chunkTester.onDestroyed();
-        }
-        super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
-    }
-    
-    @Override
     public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit)
     {
         if(pLevel.isClientSide() == false)
