@@ -1,10 +1,10 @@
 package me.doggy.energyprotectivefields.item.module.field;
 
 import me.doggy.energyprotectivefields.api.IFieldProjector;
+import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.capability.wrapper.FakeItemStackWrapper;
-import me.doggy.energyprotectivefields.api.module.IProjectorModule;
+import me.doggy.energyprotectivefields.api.module.projector.IProjectorModule;
 import me.doggy.energyprotectivefields.block.ModBlocks;
-import me.doggy.energyprotectivefields.block.entity.FieldBlockEntity;
 import me.doggy.energyprotectivefields.item.ModItems;
 import me.doggy.energyprotectivefields.screen.CamouflageModuleMenu;
 import net.minecraft.nbt.CompoundTag;
@@ -14,7 +14,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -109,8 +108,14 @@ public class CamouflageModuleItem extends Item implements IProjectorModule
     }
     
     @Override
-    public void apply(ItemStack moduleStack, IFieldProjector projector)
+    public void cancel(ModuleInfo<IProjectorModule> moduleModuleInfo, IFieldProjector projector)
     {
-        projector.setCamouflage(getBlockStateToRender(moduleStack));
+        projector.setCamouflage(DEFAULT_STATE);
+    }
+    
+    @Override
+    public void apply(ModuleInfo<IProjectorModule> moduleModuleInfo, IFieldProjector projector)
+    {
+        projector.setCamouflage(getBlockStateToRender(moduleModuleInfo.getItemStack()));
     }
 }

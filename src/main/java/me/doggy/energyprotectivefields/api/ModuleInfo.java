@@ -13,6 +13,11 @@ public class ModuleInfo<T extends IModule>
     @Nullable
     private final Direction slotDirection;
     
+    public static <T extends IModule> boolean hasModule(ItemStack itemStack, Class<T> clazz)
+    {
+        return ItemStackConverter.getStackAs(itemStack, clazz) != null;
+    }
+    
     @Nullable
     public static <T extends IModule> ModuleInfo<T> get(ItemStack itemStack, Class<T> clazz, @Nullable Direction slotDirection)
     {

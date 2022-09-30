@@ -54,13 +54,14 @@ public class FieldBlockEntity extends BlockEntity
         if(this.camouflage.equals(camouflage) == false)
         {
             this.camouflage = camouflage;
+    
+            boolean renderingItself = camouflage.equals(ModBlocks.FIELD_BLOCK.get().defaultBlockState());
+            var blockState = level.getBlockState(worldPosition);
+            if(blockState.hasProperty(FieldBlock.RENDERING_ITSELF) && blockState.getValue(FieldBlock.RENDERING_ITSELF) != renderingItself)
+                level.setBlock(worldPosition, blockState.setValue(FieldBlock.RENDERING_ITSELF, renderingItself), 2+8+16+32);
+            
             setChanged();
         }
-    
-        boolean renderingItself = camouflage.equals(ModBlocks.FIELD_BLOCK.get().defaultBlockState());
-        var blockState = level.getBlockState(worldPosition);
-        if(blockState.hasProperty(FieldBlock.RENDERING_ITSELF) && blockState.getValue(FieldBlock.RENDERING_ITSELF) != renderingItself)
-            level.setBlock(worldPosition, blockState.setValue(FieldBlock.RENDERING_ITSELF, renderingItself), 2+8+16+32);
     }
     
     @Nullable

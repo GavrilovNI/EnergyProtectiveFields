@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Optional;
 
-public class ModulesItemStackHandler extends ItemStackHandler implements IHaveDirectionalSlots
+public class ModulesItemStackHandler extends NotifiableItemStackHandler implements IHaveDirectionalSlots
 {
     public ModulesItemStackHandler(int size)
     {

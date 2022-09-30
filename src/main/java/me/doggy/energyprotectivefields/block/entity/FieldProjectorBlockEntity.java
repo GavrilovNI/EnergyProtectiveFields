@@ -2,6 +2,7 @@ package me.doggy.energyprotectivefields.block.entity;
 
 import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ILinkingCard;
+import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
 import me.doggy.energyprotectivefields.api.capability.item.ModulesItemStackHandler;
@@ -47,14 +48,15 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     private final ModulesItemStackHandler itemStackHandler = new ModulesItemStackHandler(ITEM_CAPABILITY_SIZE)
     {
         @Override
-        protected void onContentsChanged(int slot)
+        protected void onContentsChanged(int slot, ItemStack oldStack, ItemStack newStack)
         {
             setChanged();
             if(level.isClientSide() == false)
             {
                 if(slot == SLOT_CONTROLLER_LINKER)
                     updateControllerFromLinker();
-                updateEnergyStorage(getModulesInfo(IEnergyModule.class));
+                if(ModuleInfo.hasModule(oldStack, IEnergyModule.class) || ModuleInfo.hasModule(newStack, IEnergyModule.class))
+                    updateEnergyStorage(getModulesInfo(IEnergyModule.class));
             }
         }
     

@@ -6,6 +6,7 @@ import me.doggy.energyprotectivefields.api.ISwitchingHandler;
 import me.doggy.energyprotectivefields.api.IFieldProjector;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.utils.HashCounter;
+import me.doggy.energyprotectivefields.block.FieldBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
 import me.doggy.energyprotectivefields.data.WorldChunkChanges;
 import me.doggy.energyprotectivefields.data.WorldChunksLoader;
@@ -14,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -41,17 +43,24 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         super(pType, pWorldPosition, pBlockState, defaultEnergyStorage);
     }
     
-    @Override
-    public void clearModules()
+    public boolean hasCamouflage()
     {
-        setCamouflage(ModBlocks.FIELD_BLOCK.get().defaultBlockState());
+        return camouflageBlockState.isAir() == false && camouflageBlockState.equals(ModBlocks.FIELD_BLOCK.get().defaultBlockState()) == false;
     }
     
     public void setCamouflage(BlockState blockState)
     {
+        if(blockState.isAir())
+            blockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
+        
         this.camouflageBlockState = blockState;
-        for(var field : fields.getFields(FieldSet.FieldState.Created))
-            ((FieldBlockEntity)level.getBlockEntity(field)).setCamouflage(camouflageBlockState);
+        for(var fieldPosition : fields.getFields(FieldSet.FieldState.Created))
+        {
+            if(level.isLoaded(fieldPosition))
+            {
+                ((FieldBlockEntity)level.getBlockEntity(fieldPosition)).setCamouflage(camouflageBlockState);
+            }
+        }
     }
     
     public abstract boolean isEnabled();
@@ -91,7 +100,10 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
             int energyToBuild = getEnergyToBuildField(fieldPosition);
             if(energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild)
             {
-                created = level.setBlock(fieldPosition, ModBlocks.FIELD_BLOCK.get().defaultBlockState(), 3);
+                var fieldBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState()
+                        .setValue(FieldBlock.RENDERING_ITSELF, hasCamouflage() == false);
+                
+                created = level.setBlock(fieldPosition, fieldBlockState, 3);
                 if(created)
                 {
                     cashedEnergyToBuild.remove(fieldPosition);
@@ -119,7 +131,6 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         if(level.getBlockEntity(blockPos) instanceof FieldBlockEntity fieldBlockEntity)
         {
             fieldBlockEntity.setProjectorPosition(worldPosition);
-            fieldBlockEntity.setCamouflage(camouflageBlockState);
         }
         else
         {
@@ -189,6 +200,8 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     
         cashedEnergyToBuild.remove(fieldPosition);
         lastFailedAttemptsToCreateField.remove(fieldPosition);
+        
+        fieldBlockEntity.setCamouflage(camouflageBlockState);
     }
     
     protected void addChunkLoader(ChunkPos by)

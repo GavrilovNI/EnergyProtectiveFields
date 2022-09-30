@@ -3,7 +3,7 @@ package me.doggy.energyprotectivefields.block.entity;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
-import me.doggy.energyprotectivefields.api.module.IProjectorModule;
+import me.doggy.energyprotectivefields.api.module.projector.IProjectorModule;
 import me.doggy.energyprotectivefields.api.module.energy.IEnergyModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
@@ -26,6 +26,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraftforge.common.capabilities.Capability;
@@ -50,15 +51,34 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private ShapeBuilder currentShapeBuilder = null;
     
     private boolean inventoryChanged = false;
+    private boolean shapeChanged = false;
+    private boolean energyChanged = false;
     
     private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
         @Override
-        protected void onContentsChanged(int slot)
+        protected void onContentsChanged(int slot, ItemStack oldStack, ItemStack newStack)
         {
-            setChanged();
             if(level.isClientSide() == false)
+            {
+                boolean wasInventoryChanged = inventoryChanged;
                 inventoryChanged = true;
+                shapeChanged = (wasInventoryChanged && shapeChanged) ||
+                        ModuleInfo.hasModule(oldStack, IFieldModule.class) || ModuleInfo.hasModule(newStack, IFieldModule.class);
+                energyChanged = (wasInventoryChanged && energyChanged) ||
+                        ModuleInfo.hasModule(oldStack, IEnergyModule.class) || ModuleInfo.hasModule(newStack, IEnergyModule.class);
+                
+                var slotDirection = getSlotDirection(slot);
+                var oldProjectorModule = ModuleInfo.get(oldStack, IProjectorModule.class, slotDirection);
+                var newProjectorModule = ModuleInfo.get(newStack, IProjectorModule.class, slotDirection);
+                
+                if(oldProjectorModule != null)
+                    cancelProjectorModule(oldProjectorModule);
+                
+                if(newProjectorModule != null)
+                    applyProjectorModule(newProjectorModule);
+            }
+            setChanged();
         }
     };
     
@@ -82,11 +102,24 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         fieldProjectors.add(this);
     }
     
+    protected void applyProjectorModule(ModuleInfo<IProjectorModule> moduleInfo)
+    {
+        for(var projector : fieldProjectors)
+            moduleInfo.getModule().apply(moduleInfo, projector);
+    }
+    
+    protected void cancelProjectorModule(ModuleInfo<IProjectorModule> moduleInfo)
+    {
+        for(var projector : fieldProjectors)
+            moduleInfo.getModule().cancel(moduleInfo, projector);
+    }
+    
     protected void onInventoryChanged()
     {
-        updateShape();
-        updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
-        applyModulesToProjectors();
+        if(shapeChanged)
+            updateShape();
+        if(energyChanged)
+            updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
         inventoryChanged = false;
     }
     
@@ -95,17 +128,16 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         return itemStackHandler.getModulesInfo(IProjectorModule.class);
     }
     
-    protected void applyModulesToProjector(IFieldProjector projector)
+    protected void applyProjectorModules(IFieldProjector projector)
     {
-        projector.clearModules();
         for(var moduleInfo : getProjectorModules())
-            moduleInfo.getModule().apply(moduleInfo.getItemStack(), projector);
+            moduleInfo.getModule().apply(moduleInfo, projector);
     }
     
-    protected void applyModulesToProjectors()
+    protected void cancelProjectorModules(IFieldProjector projector)
     {
-        for(var projector : fieldProjectors)
-            applyModulesToProjector(projector);
+        for(var moduleInfo : getProjectorModules())
+            moduleInfo.getModule().cancel(moduleInfo, projector);
     }
     
     @Nullable
@@ -446,7 +478,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                 fieldProjectors.add(fieldProjector);
                 if(fieldProjector.isEnabled())
                     redistributeFieldsForNew(fieldProjector);
-                applyModulesToProjector(fieldProjector);
+                
+                applyProjectorModules(fieldProjector);
             }
         }
     }
@@ -461,15 +494,19 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             
             fieldProjectors.remove(fieldProjector);
             distributeFieldsFrom(fieldProjector);
-            fieldProjector.clearModules();
+            
+            cancelProjectorModules(fieldProjector);
         }
     }
     
     @Override
     public void serverTick(ServerLevel level, BlockPos blockPos, BlockState blockState)
     {
+        itemStackHandler.findChanges();
+        
         if(inventoryChanged)
             onInventoryChanged();
+        
         super.serverTick(level, blockPos, blockState);
         energyStorage.clearStats();
     }
