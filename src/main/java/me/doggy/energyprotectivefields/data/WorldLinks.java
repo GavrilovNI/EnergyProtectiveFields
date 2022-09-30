@@ -157,6 +157,8 @@ public class WorldLinks extends SavedData
         
         if(controller != null && controllerToOthers.containsEntry(controllerInfo, blockPos) == false)
         {
+            EnergyProtectiveFields.LOGGER.debug("Adding link for controller at (" + controllerInfo.blockPos.toShortString() +
+                    ") and projector at (" + blockPos.toShortString() + ")");
             controllerToOthers.put(controllerInfo, blockPos);
             controller.onLinked(level, blockPos);
             
@@ -168,6 +170,9 @@ public class WorldLinks extends SavedData
     {
         if(controllerToOthers.remove(controllerInfo, blockPos))
         {
+            EnergyProtectiveFields.LOGGER.debug("Removing link for controller at (" + controllerInfo.blockPos.toShortString() +
+                    ") and projector at (" + blockPos.toShortString() + ")");
+            
             var controller = getController(controllerInfo);
             if(controller != null)
                 controller.onUnlinked(level, blockPos);

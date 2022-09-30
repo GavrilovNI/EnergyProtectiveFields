@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
+import me.doggy.energyprotectivefields.IDestroyingHandler;
 import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.FieldSet;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
@@ -20,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Predicate;
 
-public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IServerTickable
+public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IDestroyingHandler, IServerTickable
 {
     public static final int MAX_FIELD_BLOCKS_CAN_BUILD_PER_TICK = 100;
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
@@ -31,10 +32,10 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     protected final HashSet<BlockPos> fieldsToDestroy = new HashSet<>();
     protected final HashMap<BlockPos, Integer> cashedEnergyToBuild = new HashMap<>();
     
-    private final HashCounter<ChunkPos> fieldsByChunkCounter = new HashCounter<>();
-    private final Map<BlockPos, Long> lastFailedAttemptsToCreateField = new HashMap<>();
+    protected final HashCounter<ChunkPos> fieldsByChunkCounter = new HashCounter<>();
+    protected final Map<BlockPos, Long> lastFailedAttemptsToCreateField = new HashMap<>();
     
-    private BlockState camouflageBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
+    protected BlockState camouflageBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState();
     
     protected int totalEnergyNeededToSupport = 0;
     
@@ -93,12 +94,14 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
             return false;
         
         boolean created = false;
-        if(canBuildIn(fieldPosition))
+        
+        BetterEnergyStorage energyStorage = getEnergyStorage();
+        int energyToBuild = getEnergyToBuildField(fieldPosition);
+        boolean hasEnoughEnergy = energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild;
+        
+        if(hasEnoughEnergy)
         {
-            BetterEnergyStorage energyStorage = getEnergyStorage();
-    
-            int energyToBuild = getEnergyToBuildField(fieldPosition);
-            if(energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild)
+            if(canBuildIn(fieldPosition))
             {
                 var fieldBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState()
                         .setValue(FieldBlock.RENDERING_ITSELF, hasCamouflage() == false);
@@ -110,10 +113,10 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
                     energyStorage.consumeEnergy(energyToBuild, false);
                 }
             }
+    
+            if(created == false )
+                lastFailedAttemptsToCreateField.put(fieldPosition, level.getGameTime());
         }
-        
-        if(created == false)
-            lastFailedAttemptsToCreateField.put(fieldPosition, level.getGameTime());
         
         return created;
     }
@@ -501,15 +504,20 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         destroyRequestedFields(fieldsToDestroy.size());
     }
     
+    protected void cancelDestroyingFieldInShape()
+    {
+        var createdFields = fields.getFields(FieldSet.FieldState.Created);
+        fieldsToDestroy.removeAll(createdFields);
+    }
+    
     @Override
-    public void setRemoved()
+    public void onDestroying()
     {
         if(level.isClientSide() == false)
         {
             destroyAllCreatedFieldsInstantly(); // TODO: should not remove instantly
             removeAllChunkLoaders();
         }
-        super.setRemoved();
     }
     
     @Override
@@ -558,7 +566,8 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     @Override
     public void onEnabled()
     {
-    
+        if(level.isClientSide() == false)
+            cancelDestroyingFieldInShape();
     }
     
     @Override

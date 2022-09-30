@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.block;
 
+import me.doggy.energyprotectivefields.IDestroyingHandler;
 import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
 import net.minecraft.core.BlockPos;
@@ -60,8 +61,22 @@ public abstract class AbstractFieldProjectorBlock extends SwitchableEntityBlock
         return InteractionResult.sidedSuccess(pLevel.isClientSide());
     }
     
-    public abstract <T extends BlockEntity & ISwitchingHandler & IServerTickable> T createBlockEntity(BlockPos pPos, BlockState pState);
-    public abstract <T extends  BlockEntity & ISwitchingHandler & IServerTickable> BlockEntityType<T> getRegisteredBlockEntity();
+    @Override
+    public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving)
+    {
+        if(pLevel.isClientSide() == false)
+        {
+            if(pState.getBlock() != pNewState.getBlock())
+            {
+                if(pLevel.getBlockEntity(pPos) instanceof IDestroyingHandler destroyingHandler)
+                    destroyingHandler.onDestroying();
+            }
+        }
+        super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
+    }
+    
+    public abstract <T extends BlockEntity & ISwitchingHandler & IDestroyingHandler & IServerTickable> T createBlockEntity(BlockPos pPos, BlockState pState);
+    public abstract <T extends  BlockEntity & ISwitchingHandler & IDestroyingHandler & IServerTickable> BlockEntityType<T> getRegisteredBlockEntity();
     
     @Nullable
     @Override

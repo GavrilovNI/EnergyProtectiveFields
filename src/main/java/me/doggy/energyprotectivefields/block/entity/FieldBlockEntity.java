@@ -132,7 +132,7 @@ public class FieldBlockEntity extends BlockEntity
     {
         if(projectorPosition == null)
             return null;
-        if(level.isLoaded(worldPosition))
+        if(level.isLoaded(projectorPosition))
         {
             if(level.getBlockEntity(projectorPosition) instanceof IFieldProjector projector)
                 return projector;

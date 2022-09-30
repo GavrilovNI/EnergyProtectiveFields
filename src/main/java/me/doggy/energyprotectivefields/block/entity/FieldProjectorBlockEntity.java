@@ -36,6 +36,8 @@ import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+
 public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity implements MenuProvider
 {
     public static final int SLOT_CONTROLLER_LINKER = 0;
@@ -181,11 +183,11 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     }
     
     @Override
-    public void setRemoved()
+    public void onDestroying()
     {
         unlink();
         dropInventory();
-        super.setRemoved();
+        super.onDestroying();
     }
     
     @Override

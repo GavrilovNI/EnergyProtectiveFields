@@ -114,11 +114,11 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             moduleInfo.getModule().cancel(moduleInfo, projector);
     }
     
-    protected void onInventoryChanged()
+    protected void onInventoryChanged(boolean forceShapeUpdate, boolean forceEnergyUpdate)
     {
-        if(shapeChanged)
+        if(forceShapeUpdate || shapeChanged)
             updateShape();
-        if(energyChanged)
+        if(forceEnergyUpdate || energyChanged)
             updateEnergyStorage(itemStackHandler.getModulesInfo(IEnergyModule.class));
         inventoryChanged = false;
     }
@@ -354,7 +354,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     }
     
     @Override
-    public void setRemoved()
+    public void onDestroying()
     {
         dropInventory();
     
@@ -363,7 +363,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(level instanceof ServerLevel serverLevel)
             WorldLinks.get(serverLevel).removeLinksByController(this);
         
-        super.setRemoved();
+        super.onDestroying();
     }
     
     @Override
@@ -421,7 +421,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
                     fieldProjectors.add(fieldProjector);
             }
             
-            onInventoryChanged();
+            onInventoryChanged(true, true);
             
             updateFieldBlockStatesFromWorldByShape();
         }
@@ -505,7 +505,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         itemStackHandler.findChanges();
         
         if(inventoryChanged)
-            onInventoryChanged();
+            onInventoryChanged(false, false);
         
         super.serverTick(level, blockPos, blockState);
         energyStorage.clearStats();
