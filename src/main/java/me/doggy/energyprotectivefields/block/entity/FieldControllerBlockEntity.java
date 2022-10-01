@@ -128,6 +128,20 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         return itemStackHandler.getModulesInfo(IProjectorModule.class);
     }
     
+    protected void applyProjectorModules()
+    {
+        for(var moduleInfo : getProjectorModules())
+            for(var projector : fieldProjectors)
+                moduleInfo.getModule().apply(moduleInfo, projector);
+    }
+    
+    protected void cancelProjectorModules()
+    {
+        for(var moduleInfo : getProjectorModules())
+            for(var projector : fieldProjectors)
+                moduleInfo.getModule().apply(moduleInfo, projector);
+    }
+    
     protected void applyProjectorModules(IFieldProjector projector)
     {
         for(var moduleInfo : getProjectorModules())
@@ -422,6 +436,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
             }
             
             onInventoryChanged(true, true);
+            applyProjectorModules();
             
             updateFieldBlockStatesFromWorldByShape();
         }
