@@ -5,6 +5,7 @@ import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShapeValidator;
 import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.block.entity.FieldControllerBlockEntity;
+import me.doggy.energyprotectivefields.controller.IFieldBounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
@@ -91,7 +92,7 @@ public class ShapeBuilder
         if(direction.getAxisDirection() == Direction.AxisDirection.POSITIVE)
             return rotations.get(direction);
         else
-            return rotations.get(direction.getOpposite());
+            return -rotations.get(direction.getOpposite());
     }
     
     public void setRotation(Direction direction, int value)
@@ -244,11 +245,14 @@ public class ShapeBuilder
         return true;
     }
     
+    public ShapeBuilder addFieldByVector(BlockPos vector)
+    {
+        var blockPos = rotateVector(vector).offset(getCenter());
+        return addField(blockPos);
+    }
+    
     public ShapeBuilder addField(BlockPos blockPos)
     {
-        var center = getCenter();
-        blockPos = rotateVector(blockPos.subtract(center)).offset(center);
-        
         if(validateBlockPos(blockPos) == false)
             return this;
         
@@ -278,8 +282,8 @@ public class ShapeBuilder
         return this;
     }
     
-    public HashSet<BlockPos> build()
+    public Set<BlockPos> build()
     {
-        return new HashSet<>(positions);
+        return Collections.unmodifiableSet(positions);
     }
 }

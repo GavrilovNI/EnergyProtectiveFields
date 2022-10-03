@@ -24,12 +24,11 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
     @Override
     public void addFields(ShapeBuilder shapeBuilder)
     {
-        var center = shapeBuilder.getCenter();
         var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
         
-        BoundingBox minBounds = getBounds(center, sizes, 0);
-        BoundingBox maxBounds = getBounds(center, sizes, strength);
+        BoundingBox minBounds = getBounds(BlockPos.ZERO, sizes, 0);
+        BoundingBox maxBounds = getBounds(BlockPos.ZERO, sizes, strength);
         
         boolean hasNotTubeModule = shapeBuilder.hasModule(ITubeModule.class) == false;
         
@@ -40,16 +39,16 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                 for(int x = maxBounds.minX(); x <= maxBounds.maxX(); ++x)
                 {
                     //north
-                    shapeBuilder.addField(new BlockPos(x, y, minBounds.minZ() - s));
+                    shapeBuilder.addFieldByVector(new BlockPos(x, y, minBounds.minZ() - s));
                     //south
-                    shapeBuilder.addField(new BlockPos(x, y, minBounds.maxZ() + s));
+                    shapeBuilder.addFieldByVector(new BlockPos(x, y, minBounds.maxZ() + s));
                 }
                 for(int z = minBounds.minZ() + 1; z < minBounds.maxZ(); ++z)
                 {
                     //west
-                    shapeBuilder.addField(new BlockPos(minBounds.minX() - s, y, z));
+                    shapeBuilder.addFieldByVector(new BlockPos(minBounds.minX() - s, y, z));
                     //east
-                    shapeBuilder.addField(new BlockPos(minBounds.maxX() + s, y, z));
+                    shapeBuilder.addFieldByVector(new BlockPos(minBounds.maxX() + s, y, z));
                 }
             }
     
@@ -60,9 +59,9 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                     for(int z = maxBounds.minZ(); z <= maxBounds.maxZ(); ++z)
                     {
                         //bottom
-                        shapeBuilder.addField(new BlockPos(x, minBounds.minY() - s, z));
+                        shapeBuilder.addFieldByVector(new BlockPos(x, minBounds.minY() - s, z));
                         //top
-                        shapeBuilder.addField(new BlockPos(x, minBounds.maxY() + s, z));
+                        shapeBuilder.addFieldByVector(new BlockPos(x, minBounds.maxY() + s, z));
                     }
                 }
             }

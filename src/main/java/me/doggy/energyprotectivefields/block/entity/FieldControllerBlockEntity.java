@@ -8,10 +8,7 @@ import me.doggy.energyprotectivefields.api.module.field.IFieldModule;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.block.FieldControllerBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
-import me.doggy.energyprotectivefields.controller.FieldsDistributor;
-import me.doggy.energyprotectivefields.controller.IFieldDistributingProjectorChooser;
-import me.doggy.energyprotectivefields.controller.IProjectorsProvider;
-import me.doggy.energyprotectivefields.controller.ProjectorModulesHelper;
+import me.doggy.energyprotectivefields.controller.*;
 import me.doggy.energyprotectivefields.data.WorldFieldsBounds;
 import me.doggy.energyprotectivefields.data.WorldLinks;
 import me.doggy.energyprotectivefields.api.capability.item.FieldControllerItemStackHandler;
@@ -52,7 +49,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private final HashSet<IFieldProjector> fieldProjectors = new HashSet<>();
     
     private Set<BlockPos> shapePositions = new HashSet<>();
-    private ShapeBuilder currentShapeBuilder = null;
+    private IFieldBounds fieldBounds = IFieldBounds.EMPTY;
     
     private boolean inventoryChanged = false;
     private boolean shapeChanged = false;
@@ -113,16 +110,12 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     @Nullable
     public BoundingBox getShapeBounds()
     {
-        if(currentShapeBuilder == null)
-            return null;
-        return currentShapeBuilder.getBounds();
+        return fieldBounds.getBounds();
     }
     
     public boolean isInsideField(Vec3i pos)
     {
-        if(currentShapeBuilder == null)
-            return false;
-        return currentShapeBuilder.isInsideField(itemStackHandler.getShape(), pos);
+        return fieldBounds.isInsideField(pos);
     }
     
     @Override
@@ -198,13 +191,27 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         if(fieldShape != null)
         {
             var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
-            currentShapeBuilder = new ShapeBuilder(this, modules).init().addFields(fieldShape);
-            shapePositions = currentShapeBuilder.build();
+            var shapeBuilder = new ShapeBuilder(this, modules).init().addFields(fieldShape);
+            shapePositions = shapeBuilder.build();
+            fieldBounds = new IFieldBounds()
+            {
+                @Override
+                public BoundingBox getBounds()
+                {
+                    return shapeBuilder.getBounds();
+                }
+    
+                @Override
+                public boolean isInsideField(Vec3i blockPos)
+                {
+                    return shapeBuilder.isInsideField(fieldShape, blockPos);
+                }
+            };
         }
         else
         {
-            currentShapeBuilder = null;
             shapePositions = new HashSet<>();
+            fieldBounds = IFieldBounds.EMPTY;
         }
         
         removeAllFieldBlocksWhichNotInShapeFromProjectors();

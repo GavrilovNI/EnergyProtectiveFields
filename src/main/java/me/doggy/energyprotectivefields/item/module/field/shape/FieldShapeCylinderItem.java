@@ -23,7 +23,6 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
     
     private void buildCylinderQuarter2(ShapeBuilder shapeBuilder, int quarterIndex)
     {
-        var centerBlock = shapeBuilder.getCenter();
         var sizes = shapeBuilder.getSizes();
         var additiveStrength = shapeBuilder.getStrength();
     
@@ -55,7 +54,7 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
             
                 if(isClosestInside)
                 {
-                    BlockPos result = Math3D.multiplyByAxes(blockPos, resultMultiplier).offset(centerBlock);
+                    BlockPos result = Math3D.multiplyByAxes(blockPos, resultMultiplier);
     
                     Vec3 farthestPoint = Math3D.getFarthestPointOfBlock(blockPos, centerOfCenterBlockLocal).subtract(centerOfCenterBlockLocal);
                     double posLocationFarthest = (farthestPoint.x * farthestPoint.x) / (size.getX() * size.getX()) +
@@ -65,15 +64,15 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
                     if(innerHeight > 0 && isFarthestOutside)
                     {
                         for(int y = 0; y < innerHeight; y++)
-                            shapeBuilder.addField(result.above(y));
+                            shapeBuilder.addFieldByVector(result.above(y));
                     }
                     
                     if(isFarthestOutside || hasTubeModule == false)
                     {
                         for(int i = 0; i <= additiveStrength; ++i)
                         {
-                            shapeBuilder.addField(result.below(i + 1));
-                            shapeBuilder.addField(result.above(i + innerHeight));
+                            shapeBuilder.addFieldByVector(result.below(i + 1));
+                            shapeBuilder.addFieldByVector(result.above(i + innerHeight));
                         }
                     }
                 }

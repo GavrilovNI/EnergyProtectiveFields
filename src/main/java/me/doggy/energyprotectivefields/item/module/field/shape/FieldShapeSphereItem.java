@@ -20,7 +20,6 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
     
     private void buildPart(ShapeBuilder shapeBuilder, int part)
     {
-        var centerBlock = shapeBuilder.getCenter();
         var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
         
@@ -58,8 +57,8 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
                 
                     if(isFarthestOutside && isClosestInside)
                     {
-                        BlockPos result = Math3D.multiplyByAxes(blockPos, resultMultiplier).offset(centerBlock);
-                        shapeBuilder.addField(result);
+                        BlockPos result = Math3D.multiplyByAxes(blockPos, resultMultiplier);
+                        shapeBuilder.addFieldByVector(result);
                     }
                 }
             }
