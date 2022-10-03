@@ -147,7 +147,7 @@ public class WorldChunksLoader extends SavedData
         if(alreadyForcingCount == 0)
         {
             boolean forced = ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, true, true);
-            if(forced)
+            /*if(forced)
             {
                 EnergyProtectiveFields.LOGGER.debug("Forced chunk" + chunkPos +
                         " with loader at (" + blockLoader.toShortString() +
@@ -162,7 +162,7 @@ public class WorldChunksLoader extends SavedData
                         ")" + new ChunkPos(blockLoader) +
                         " and initiator at (" + initiator.toShortString() +
                         ")" + new ChunkPos(initiator));
-            }
+            }*/
         }
     
         initiatorByInfo.put(forcingInfo, initiator);
@@ -179,7 +179,7 @@ public class WorldChunksLoader extends SavedData
         if(leftCount == 1)
         {
             boolean stopped = ForgeChunkManager.forceChunk(level, EnergyProtectiveFields.MOD_ID, blockLoader, chunkPos.x, chunkPos.z, false, true);
-            if(stopped)
+            /*if(stopped)
             {
                 EnergyProtectiveFields.LOGGER.debug("Stopped forcing chunk " + chunkPos +
                         " with loader at (" + blockLoader.toShortString() +
@@ -194,7 +194,7 @@ public class WorldChunksLoader extends SavedData
                         ")" + new ChunkPos(blockLoader) +
                         " and initiator at (" + initiator.toShortString() +
                         ")" + new ChunkPos(initiator));
-            }
+            }*/
         }
         
         initiatorByInfo.remove(forcingInfo, initiator);

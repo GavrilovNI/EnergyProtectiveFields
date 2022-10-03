@@ -58,7 +58,7 @@ public class WorldChunkChanges extends SavedData
         return lastTimeChunksUpdated.get(chunkPos);
     }
     
-    public boolean isChunkUpdatedAfter(ChunkPos chunkPos, long instant)
+    public boolean isChunkUpdatedAfter(ChunkPos chunkPos, long gameTime)
     {
         var lastTimeUpdated = lastTimeChunksUpdated.get(chunkPos);
         if(lastTimeUpdated == null)
@@ -67,7 +67,20 @@ public class WorldChunkChanges extends SavedData
         }
         else
         {
-            return lastTimeUpdated > instant;
+            return lastTimeUpdated > gameTime;
+        }
+    }
+    
+    public boolean isChunkUpdatedNotBefore(ChunkPos chunkPos, long gameTime)
+    {
+        var lastTimeUpdated = lastTimeChunksUpdated.get(chunkPos);
+        if(lastTimeUpdated == null)
+        {
+            return false;
+        }
+        else
+        {
+            return lastTimeUpdated >= gameTime;
         }
     }
     

@@ -136,9 +136,8 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     {
         var controllerLinkerStack = itemStackHandler.getStackInSlot(SLOT_CONTROLLER_LINKER);
         var controllerLinker = ItemStackConverter.getStackAs(controllerLinkerStack, ILinkingCard.class);
-        if(controllerLinker == null)
-            unlink();
-        else
+        unlink();
+        if(controllerLinker != null)
             link(controllerLinker.getConnectionInfo(controllerLinkerStack));
     }
     
@@ -154,6 +153,7 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
         }
         return null;
     }
+    
     public boolean isMyController(FieldControllerBlockEntity controller)
     {
         return linkedControllerInfo != null && controller.getBlockPos().equals(linkedControllerInfo.blockPos) && controller.getUUID().equals(linkedControllerInfo.uuid);
@@ -163,7 +163,6 @@ public class FieldProjectorBlockEntity extends AbstractFieldProjectorBlockEntity
     {
         if(level instanceof ServerLevel serverLevel)
         {
-            unlink();
             linkedControllerInfo = connectionInfo;
             if(connectionInfo != null)
                 WorldLinks.get(serverLevel).addLink(connectionInfo, worldPosition);

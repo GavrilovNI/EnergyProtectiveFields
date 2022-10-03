@@ -142,6 +142,12 @@ public class FieldBlockEntity extends BlockEntity
         return null;
     }
     
+    @Nullable
+    public BlockPos getProjectorPosition()
+    {
+        return projectorPosition;
+    }
+    
     protected void onLostProjector(boolean destroy)
     {
         projectorPosition = null;

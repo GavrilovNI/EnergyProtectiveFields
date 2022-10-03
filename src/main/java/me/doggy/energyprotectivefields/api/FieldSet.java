@@ -15,6 +15,7 @@ public class FieldSet
         Unknown,
         NotCreated,
         NotCreatedTwice,
+        NoCreatedTwiceTestingForCreation,
         Created,
         RemovedFromShape
     }
