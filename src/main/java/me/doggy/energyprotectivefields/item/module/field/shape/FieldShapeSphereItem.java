@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.item.module.field.shape;
 
+import me.doggy.energyprotectivefields.api.CancellationToken;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.utils.Math3D;
@@ -18,7 +19,7 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
         super(pProperties);
     }
     
-    private void buildPart(ShapeBuilder shapeBuilder, int part)
+    private void buildPart(ShapeBuilder shapeBuilder, int part, CancellationToken cancellationToken)
     {
         var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
@@ -61,15 +62,16 @@ public class FieldShapeSphereItem extends Item implements IFieldShape
                         shapeBuilder.addFieldByVector(result);
                     }
                 }
+                cancellationToken.testCancellation();
             }
         }
     }
     
     @Override
-    public void addFields(ShapeBuilder shapeBuilder)
+    public void addFields(ShapeBuilder shapeBuilder, CancellationToken cancellationToken)
     {
         for(int i = 0; i < 8; ++i)
-            buildPart(shapeBuilder, i);
+            buildPart(shapeBuilder, i, cancellationToken);
     }
     
     protected boolean isInsideSpherePart(ShapeBuilder shapeBuilder, Vec3i blockPos, int part)

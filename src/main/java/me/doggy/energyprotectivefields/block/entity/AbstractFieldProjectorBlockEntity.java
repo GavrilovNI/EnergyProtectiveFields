@@ -289,8 +289,6 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     @Override
     public void removeFieldsIf(Predicate<BlockPos> predicate)
     {
-        if(level.isClientSide())
-            return;
         var iterator = fields.iteratorExcept(FieldSet.FieldState.RemovedFromShape);
         while(iterator.hasNext())
         {

@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.item.module.field.shape;
 
+import me.doggy.energyprotectivefields.api.CancellationToken;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.field.ITubeModule;
@@ -22,7 +23,7 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
     }
     
     @Override
-    public void addFields(ShapeBuilder shapeBuilder)
+    public void addFields(ShapeBuilder shapeBuilder, CancellationToken cancellationToken)
     {
         var sizes = shapeBuilder.getSizes();
         var strength = shapeBuilder.getStrength();
@@ -43,6 +44,7 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                     //south
                     shapeBuilder.addFieldByVector(new BlockPos(x, y, minBounds.maxZ() + s));
                 }
+                cancellationToken.testCancellation();
                 for(int z = minBounds.minZ() + 1; z < minBounds.maxZ(); ++z)
                 {
                     //west
@@ -50,6 +52,7 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                     //east
                     shapeBuilder.addFieldByVector(new BlockPos(minBounds.maxX() + s, y, z));
                 }
+                cancellationToken.testCancellation();
             }
     
             if(hasNotTubeModule)
@@ -59,10 +62,11 @@ public class FieldShapeCubeItem extends Item implements IFieldShape
                     for(int z = maxBounds.minZ(); z <= maxBounds.maxZ(); ++z)
                     {
                         //bottom
-                        shapeBuilder.addFieldByVector(new BlockPos(x, minBounds.minY() - s, z));
+                         shapeBuilder.addFieldByVector(new BlockPos(x, minBounds.minY() - s, z));
                         //top
                         shapeBuilder.addFieldByVector(new BlockPos(x, minBounds.maxY() + s, z));
                     }
+                    cancellationToken.testCancellation();
                 }
             }
         }

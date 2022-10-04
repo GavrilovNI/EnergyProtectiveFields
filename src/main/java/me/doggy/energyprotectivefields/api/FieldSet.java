@@ -287,7 +287,7 @@ public class FieldSet
     
     public Set<BlockPos> getFields(FieldState fieldState)
     {
-        return (Set<BlockPos>)fields.get(fieldState).clone();
+        return Collections.unmodifiableSet(fields.get(fieldState));
     }
     
     public Set<BlockPos> getFields(FieldState first, FieldState ... fieldStates)

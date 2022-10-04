@@ -13,6 +13,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class ShapeBuilder
 {
@@ -49,21 +50,43 @@ public class ShapeBuilder
         strength = 0;
     }
     
-    public ShapeBuilder init()
+    public synchronized ShapeBuilder init()
     {
         for(var moduleInfo : modules)
             moduleInfo.getModule().applyOnInit(this, moduleInfo);
         return this;
     }
     
-    public BoundingBox getBounds()
+    public synchronized BoundingBox getBounds()
     {
         if(bounds == null)
             return null;
         return new BoundingBox(bounds.minX(), bounds.minY(), bounds.minZ(), bounds.maxX(), bounds.maxY(), bounds.maxZ());
     }
     
-    public boolean hasModule(Class<? extends IModule> clazz)
+    public synchronized IFieldBounds asFieldBounds(IFieldShape fieldShape)
+    {
+        if(bounds == null)
+            return IFieldBounds.EMPTY;
+        
+        var builder = this;
+        return new IFieldBounds()
+        {
+            @Override
+            public BoundingBox getBounds()
+            {
+                return builder.getBounds();
+            }
+    
+            @Override
+            public boolean isInsideField(Vec3i blockPos)
+            {
+                return builder.isInsideField(fieldShape, blockPos);
+            }
+        };
+    }
+    
+    public synchronized boolean hasModule(Class<? extends IModule> clazz)
     {
         for(var moduleInfo : modules)
             if(clazz.isAssignableFrom(moduleInfo.getModule().getClass()))
@@ -71,7 +94,7 @@ public class ShapeBuilder
         return false;
     }
     
-    public ArrayList<ModuleInfo<IFieldModule>> getModules(Class<IModule> clazz)
+    public synchronized ArrayList<ModuleInfo<IFieldModule>> getModules(Class<IModule> clazz)
     {
         ArrayList<ModuleInfo<IFieldModule>> result = new ArrayList<>();
     
@@ -82,12 +105,12 @@ public class ShapeBuilder
         return result;
     }
     
-    public FieldControllerBlockEntity getController()
+    public synchronized FieldControllerBlockEntity getController()
     {
         return controller;
     }
     
-    public int getRotation(Direction direction)
+    public synchronized int getRotation(Direction direction)
     {
         if(direction.getAxisDirection() == Direction.AxisDirection.POSITIVE)
             return rotations.get(direction);
@@ -95,7 +118,7 @@ public class ShapeBuilder
             return -rotations.get(direction.getOpposite());
     }
     
-    public void setRotation(Direction direction, int value)
+    public synchronized void setRotation(Direction direction, int value)
     {
         if(direction.getAxisDirection() == Direction.AxisDirection.NEGATIVE)
         {
@@ -151,7 +174,7 @@ public class ShapeBuilder
         }
     }
     
-    public BlockPos rotateVector(Vec3i vector)
+    public synchronized BlockPos rotateVector(Vec3i vector)
     {
         return new BlockPos(
                 vector.get(rotatedAxisByIndex[0]) * rotatedMultipliers[0],
@@ -160,7 +183,7 @@ public class ShapeBuilder
         );
     }
     
-    public BlockPos rotateVectorBack(Vec3i vector)
+    public synchronized BlockPos rotateVectorBack(Vec3i vector)
     {
         int[] values = { vector.getX() / rotatedMultipliers[0], vector.getY() / rotatedMultipliers[1], vector.getZ() / rotatedMultipliers[2] };
         int[] newValues = { vector.getX() / rotatedMultipliers[0], vector.getY() / rotatedMultipliers[1], vector.getZ() / rotatedMultipliers[2] };
@@ -174,23 +197,23 @@ public class ShapeBuilder
         return new BlockPos(newValues[0], newValues[1], newValues[2]);
     }
     
-    public BlockPos getCenter()
+    public synchronized BlockPos getCenter()
     {
         return center;
     }
     
-    public ShapeBuilder setCenter(BlockPos blockPos)
+    public synchronized ShapeBuilder setCenter(BlockPos blockPos)
     {
         this.center = blockPos;
         return this;
     }
     
-    public int getSize(Direction direction)
+    public synchronized int getSize(Direction direction)
     {
         return sizes.getOrDefault(direction, 0);
     }
     
-    public Map<Direction, Integer> getSizes()
+    public synchronized Map<Direction, Integer> getSizes()
     {
         var result = new HashMap<>(sizes);
         for(var direction : Direction.values())
@@ -198,7 +221,7 @@ public class ShapeBuilder
         return result;
     }
     
-    public ShapeBuilder setSize(int size)
+    public synchronized ShapeBuilder setSize(int size)
     {
         if(size < 0)
             throw new IllegalArgumentException("Size must not be negative.");
@@ -207,7 +230,7 @@ public class ShapeBuilder
         return this;
     }
     
-    public ShapeBuilder setSize(@Nullable Direction direction, int size)
+    public synchronized ShapeBuilder setSize(@Nullable Direction direction, int size)
     {
         if(direction == null)
         {
@@ -221,12 +244,12 @@ public class ShapeBuilder
         return this;
     }
     
-    public int getStrength()
+    public synchronized int getStrength()
     {
         return strength;
     }
     
-    public ShapeBuilder setStrength(int strength)
+    public synchronized ShapeBuilder setStrength(int strength)
     {
         if(strength < 0)
             throw new IllegalArgumentException("Strength must not be negative.");
@@ -234,7 +257,7 @@ public class ShapeBuilder
         return this;
     }
     
-    protected boolean validateBlockPos(Vec3i blockPos)
+    protected synchronized boolean validateBlockPos(Vec3i blockPos)
     {
         for(var moduleInfo : modules)
         {
@@ -245,17 +268,17 @@ public class ShapeBuilder
         return true;
     }
     
-    public ShapeBuilder addFieldByVector(BlockPos vector)
+    public synchronized ShapeBuilder addFieldByVector(BlockPos vector)
     {
         var blockPos = rotateVector(vector).offset(getCenter());
         return addField(blockPos);
     }
     
-    public ShapeBuilder addField(BlockPos blockPos)
+    public synchronized ShapeBuilder addField(BlockPos blockPos)
     {
         if(validateBlockPos(blockPos) == false)
             return this;
-        
+    
         positions.add(blockPos);
         
         if(bounds == null)
@@ -265,7 +288,7 @@ public class ShapeBuilder
         return this;
     }
     
-    public boolean isInsideField(IFieldShape shape, Vec3i pos)
+    public synchronized boolean isInsideField(IFieldShape shape, Vec3i pos)
     {
         if(bounds == null)
             return false;
@@ -276,14 +299,30 @@ public class ShapeBuilder
         return false;
     }
     
-    public ShapeBuilder addFields(IFieldShape shape)
+    private ShapeBuilder addFields(IFieldShape shape, CancellationToken cancellationToken)
     {
-        shape.addFields(this);
+        shape.addFields(this, cancellationToken);
         return this;
     }
     
-    public Set<BlockPos> build()
+    public ShapeBuilder addFields(IFieldShape shape)
+    {
+        return addFields(shape, new CancellationToken());
+    }
+    
+    public CompletableFuture<ShapeBuilder> addFieldsAsync(IFieldShape shape, CancellationToken cancellationToken)
+    {
+        return CompletableFuture.supplyAsync(() -> addFields(shape, cancellationToken));
+    }
+    
+    //returned set is not synchronized
+    public synchronized Set<BlockPos> build()
     {
         return Collections.unmodifiableSet(positions);
+    }
+    
+    public synchronized HashSet<BlockPos> buildCopy()
+    {
+        return new HashSet<>(positions);
     }
 }

@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.api.module.field;
 
+import me.doggy.energyprotectivefields.api.CancellationToken;
 import me.doggy.energyprotectivefields.api.ModuleInfo;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import net.minecraft.core.Vec3i;
@@ -8,7 +9,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 public interface IFieldShape extends IFieldModule
 {
-    void addFields(ShapeBuilder shapeBuilder);
+    void addFields(ShapeBuilder shapeBuilder, CancellationToken cancellationToken);
     
     @Override
     default int getLimitInMachineSlot(ItemStack itemStack)

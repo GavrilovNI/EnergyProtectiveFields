@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.block.entity;
 
+import me.doggy.energyprotectivefields.EnergyProtectiveFields;
 import me.doggy.energyprotectivefields.api.*;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorageWithStats;
@@ -13,12 +14,14 @@ import me.doggy.energyprotectivefields.data.WorldFieldsBounds;
 import me.doggy.energyprotectivefields.data.WorldLinks;
 import me.doggy.energyprotectivefields.api.capability.item.FieldControllerItemStackHandler;
 import me.doggy.energyprotectivefields.screen.FieldControllerMenu;
+import me.doggy.energyprotectivefields.utils.PerformanceTester;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -38,6 +41,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntity implements IHaveUUID, ILinkable, MenuProvider, IProjectorsProvider, IFieldDistributingProjectorChooser
@@ -45,6 +49,8 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private static final BetterEnergyStorage defaultEnergyStorage = new BetterEnergyStorage(0, 50000, 10000, 0);
     
     private UUID uuid;
+    
+    private MinecraftServer server;
     
     private final HashSet<IFieldProjector> fieldProjectors = new HashSet<>();
     
@@ -54,6 +60,9 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     private boolean inventoryChanged = false;
     private boolean shapeChanged = false;
     private boolean energyChanged = false;
+    
+    private final PerformanceTester performanceTester = new PerformanceTester(EnergyProtectiveFields.LOGGER);
+    private CancellationToken buildShapeCancellationToken = new CancellationToken();
     
     private final FieldControllerItemStackHandler itemStackHandler = new FieldControllerItemStackHandler()
     {
@@ -187,39 +196,74 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     
     protected void updateShape()
     {
-        IFieldShape fieldShape = itemStackHandler.getShape();
+        buildShapeCancellationToken.setCancelled();
+        var currentCancellationToken = new CancellationToken();
+        buildShapeCancellationToken = currentCancellationToken;
+    
+        performanceTester.stopSilence("Shape Building");
+        
+        var shape = itemStackHandler.getShape();
+        
+        performanceTester.start("Shape Building");
+        var future = buildShapeAsync(shape, currentCancellationToken);
+        future.thenAccept(builder -> {
+            server.executeBlocking(() -> {
+                if(currentCancellationToken.isCancelled())
+                    return;
+                
+                performanceTester.stop("Shape Building");
+                
+                shapePositions = builder.build();
+                fieldBounds = builder.asFieldBounds(shape);
+                onShapeUpdated();
+            });
+        });
+    }
+    
+    private CompletableFuture<ShapeBuilder> buildShape(@Nullable IFieldShape fieldShape)
+    {
+        ShapeBuilder shapeBuilder;
         if(fieldShape != null)
         {
             var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
-            var shapeBuilder = new ShapeBuilder(this, modules).init().addFields(fieldShape);
-            shapePositions = shapeBuilder.build();
-            fieldBounds = new IFieldBounds()
-            {
-                @Override
-                public BoundingBox getBounds()
-                {
-                    return shapeBuilder.getBounds();
-                }
-    
-                @Override
-                public boolean isInsideField(Vec3i blockPos)
-                {
-                    return shapeBuilder.isInsideField(fieldShape, blockPos);
-                }
-            };
+            shapeBuilder = new ShapeBuilder(this, modules).init().addFields(fieldShape);
         }
         else
         {
-            shapePositions = new HashSet<>();
-            fieldBounds = IFieldBounds.EMPTY;
+            shapeBuilder = new ShapeBuilder(this, new ArrayList<>());
         }
-        
+        return CompletableFuture.completedFuture(shapeBuilder);
+    }
+    
+    private CompletableFuture<ShapeBuilder> buildShapeAsync(@Nullable IFieldShape fieldShape, CancellationToken cancellationToken)
+    {
+        if(fieldShape != null)
+        {
+            var modules = itemStackHandler.getModulesInfo(IFieldModule.class);
+            var shapeBuilder = new ShapeBuilder(this, modules).init();
+            return shapeBuilder.addFieldsAsync(fieldShape, cancellationToken);
+        }
+        else
+        {
+            return CompletableFuture.completedFuture(new ShapeBuilder(this, new ArrayList<>()));
+        }
+    }
+    
+    private void onShapeUpdated()
+    {
+        performanceTester.start("Remove NotInShape Fields");
         removeAllFieldBlocksWhichNotInShapeFromProjectors();
+        performanceTester.stop("Remove NotInShape Fields");
+    
+        performanceTester.start("Distributing Fields");
         HashSet<BlockPos> notDistributedFields = new HashSet<>(shapePositions);
         for(var projector : fieldProjectors)
             notDistributedFields.removeAll(projector.getAllFieldsInShape());
     
+        performanceTester.logNow("Distributing Fields", "Calculated");
+        
         fieldsDistributor.distributeFields(notDistributedFields);
+        performanceTester.stop("Distributing Fields");
     
         updateWorldFieldBounds();
     }
@@ -346,6 +390,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         super.onLoad();
         lazyItemHandler = LazyOptional.of(() -> itemStackHandler);
         lazyEnergyStorage = LazyOptional.of(() -> energyStorage);
+        server = level.getServer();
         
         if(level.isClientSide() == false)
         {

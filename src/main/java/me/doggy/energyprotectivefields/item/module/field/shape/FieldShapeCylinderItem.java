@@ -1,5 +1,6 @@
 package me.doggy.energyprotectivefields.item.module.field.shape;
 
+import me.doggy.energyprotectivefields.api.CancellationToken;
 import me.doggy.energyprotectivefields.api.ShapeBuilder;
 import me.doggy.energyprotectivefields.api.module.field.IFieldShape;
 import me.doggy.energyprotectivefields.api.module.field.ITubeModule;
@@ -21,7 +22,7 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
         super(pProperties);
     }
     
-    private void buildCylinderQuarter2(ShapeBuilder shapeBuilder, int quarterIndex)
+    private void buildCylinderQuarter2(ShapeBuilder shapeBuilder, int quarterIndex, CancellationToken cancellationToken)
     {
         var sizes = shapeBuilder.getSizes();
         var additiveStrength = shapeBuilder.getStrength();
@@ -76,15 +77,16 @@ public class FieldShapeCylinderItem extends Item implements IFieldShape
                         }
                     }
                 }
+                cancellationToken.testCancellation();
             }
         }
     }
     
     @Override
-    public void addFields(ShapeBuilder shapeBuilder)
+    public void addFields(ShapeBuilder shapeBuilder, CancellationToken cancellationToken)
     {
         for(int i = 0; i < 4; ++i)
-            buildCylinderQuarter2(shapeBuilder, i);
+            buildCylinderQuarter2(shapeBuilder, i, cancellationToken);
     }
     
     protected boolean isInsideInfinityCylinder(ShapeBuilder shapeBuilder, Vec3i blockPos, int quarterIndex)
