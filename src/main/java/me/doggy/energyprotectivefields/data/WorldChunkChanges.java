@@ -2,7 +2,10 @@ package me.doggy.energyprotectivefields.data;
 
 
 import me.doggy.energyprotectivefields.EnergyProtectiveFields;
+import me.doggy.energyprotectivefields.api.IFieldProjector;
+import me.doggy.energyprotectivefields.block.FieldBlock;
 import me.doggy.energyprotectivefields.event.LevelChunkEvent;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -21,7 +24,7 @@ public class WorldChunkChanges extends SavedData
     {
         var level = event.levelChunk.getLevel();
         if(level instanceof ServerLevel serverLevel)
-            get(serverLevel).levelChunkBlockStateChanged(event.levelChunk.getPos(), event.oldState, event.newState, level.getGameTime());
+            get(serverLevel).levelChunkBlockStateChanged(event.levelChunk.getPos(), event.blockPos, event.oldState, event.newState, level.getGameTime());
     }
     
     public static WorldChunkChanges get(ServerLevel level)
@@ -44,12 +47,24 @@ public class WorldChunkChanges extends SavedData
         return nbt;
     }
     
-    public void levelChunkBlockStateChanged(ChunkPos chunkPos, BlockState oldState, BlockState newState, long gameTime)
+    public void levelChunkBlockStateChanged(ChunkPos chunkPos, BlockPos blockPos, BlockState oldState, BlockState newState, long gameTime)
     {
-        boolean shouldCapture = oldState.isAir() == false && newState.isAir() && WorldFieldsBounds.get(level).hasControllersByChunk(chunkPos);
+        boolean shouldCaptureForChunkChanges = oldState.isAir() == false && newState.isAir() && WorldFieldsBounds.get(level).hasControllersByChunk(chunkPos);
+        boolean shouldCaptureForProjectors = shouldCaptureForChunkChanges && (oldState.getBlock() instanceof FieldBlock == false);
         
-        if(shouldCapture)
+        if(shouldCaptureForChunkChanges)
             lastTimeChunksUpdated.put(chunkPos, gameTime);
+        
+        if(shouldCaptureForProjectors)
+        {
+            var controllerPositions = WorldFieldsBounds.get(level).getControllersByChunk(chunkPos);
+            
+            for(var controllerPosition : controllerPositions)
+            {
+                if(level.getBlockEntity(controllerPosition) instanceof IFieldProjector fieldProjector)
+                    fieldProjector.queueFieldForCreatingIfInShape(blockPos);
+            }
+        }
     }
     
     @Nullable

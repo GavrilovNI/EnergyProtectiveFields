@@ -408,7 +408,7 @@ public class PerformanceTester
         this(null);
     }
     
-    private String durationToString(Duration duration)
+    public String durationToString(Duration duration)
     {
         long value = duration.toNanos() / temporalUnit.getDuration().toNanos();
         return String.valueOf(value) + " " + temporalUnit.toString();
@@ -434,11 +434,26 @@ public class PerformanceTester
         return this;
     }
     
+    public void startSilence(String name)
+    {
+        if(timers.put(name, Instant.now()) != null)
+            throw new IllegalStateException("Timer '" + name + "' already started!");
+    }
+    
     public void start(String name)
     {
         logger.debug("Timer '" + name + "' has started");
-        if(timers.put(name, Instant.now()) != null)
-            throw new IllegalStateException("Timer '" + name + "' already started!");
+        startSilence(name);
+    }
+    
+    @Nullable
+    public Duration startOrRestartSilence(String name)
+    {
+        if(timers.containsKey(name))
+            return restartSilence(name);
+        else
+            startSilence(name);
+        return null;
     }
     
     @Nullable
@@ -449,6 +464,13 @@ public class PerformanceTester
         else
             start(name);
         return null;
+    }
+    
+    public Duration restartSilence(String name)
+    {
+        var duration = stopSilence(name);
+        startSilence(name);
+        return duration;
     }
     
     public Duration restart(String name)
@@ -495,6 +517,11 @@ public class PerformanceTester
         if(timeStart == null)
             throw new IllegalStateException("Timer '" + name + "' was not started!");
         return Duration.between(timeStart, timeEnd);
+    }
+    
+    public boolean has(String name)
+    {
+        return timers.containsKey(name);
     }
     
     public void stopAll()

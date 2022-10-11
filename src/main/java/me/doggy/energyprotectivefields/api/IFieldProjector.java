@@ -17,6 +17,7 @@ public interface IFieldProjector extends IFieldStateListener
     int getEnergyToSupportField(BlockPos blockPos);
     
     void clearFields();
+    void queueFieldForCreatingIfInShape(BlockPos blockPos);
     void addField(BlockPos blockPos);
     void removeField(BlockPos blockPos);
     
