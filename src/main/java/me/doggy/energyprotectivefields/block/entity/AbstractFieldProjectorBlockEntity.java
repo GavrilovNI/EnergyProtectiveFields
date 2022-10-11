@@ -9,7 +9,6 @@ import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage
 import me.doggy.energyprotectivefields.api.utils.HashCounter;
 import me.doggy.energyprotectivefields.block.FieldBlock;
 import me.doggy.energyprotectivefields.block.ModBlocks;
-import me.doggy.energyprotectivefields.data.WorldChunkChanges;
 import me.doggy.energyprotectivefields.data.WorldChunksLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -26,6 +25,15 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     public static final int MAX_FIELD_BLOCKS_CAN_REMOVE_PER_TICK = 1000;
     public static final int DEFAULT_ENERGY_TO_BUILD_FIELD = 10;
     public static final int DEFAULT_ENERGY_TO_SUPPORT_FIELD = 2;
+    
+    protected enum FieldCreationResult
+    {
+        ShouldNotTry,
+        NotEnoughEnergy,
+        CannotBuild,
+        NotCreated,
+        Created
+    }
     
     protected final FieldSet fields = new FieldSet();
     protected final HashSet<BlockPos> fieldsToDestroy = new HashSet<>();
@@ -85,19 +93,18 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         return level.isOutsideBuildHeight(position);
     }
     
-    protected boolean createFieldWithoutInitialization(BlockPos fieldPosition, boolean forced)
+    protected FieldCreationResult createFieldWithoutInitialization(BlockPos fieldPosition, boolean forced)
     {
         boolean shouldTryToCreate = forced || shouldTryToCreateField(fieldPosition);
         
         if(shouldTryToCreate == false)
-            return false;
-        
-        boolean created = false;
+            return FieldCreationResult.ShouldNotTry;
         
         BetterEnergyStorage energyStorage = getEnergyStorage();
         int energyToBuild = getEnergyToBuildField(fieldPosition);
         boolean hasEnoughEnergy = energyStorage.consumeEnergy(energyToBuild, true) >= energyToBuild;
-        
+    
+        FieldCreationResult result;
         if(hasEnoughEnergy)
         {
             if(canBuildIn(fieldPosition))
@@ -105,27 +112,40 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
                 var fieldBlockState = ModBlocks.FIELD_BLOCK.get().defaultBlockState()
                         .setValue(FieldBlock.RENDERING_ITSELF, hasCamouflage() == false);
                 
-                created = level.setBlock(fieldPosition, fieldBlockState, 3);
+                boolean created = level.setBlock(fieldPosition, fieldBlockState, 3);
                 if(created)
                 {
                     cashedEnergyToBuild.remove(fieldPosition);
                     energyStorage.consumeEnergy(energyToBuild, false);
+                    result = FieldCreationResult.Created;
+                }
+                else
+                {
+                    result = FieldCreationResult.NotCreated;
                 }
             }
+            else
+            {
+                result = FieldCreationResult.CannotBuild;
+            }
     
-            if(created == false )
+            if(result != FieldCreationResult.Created)
                 lastFailedAttemptsToCreateField.put(fieldPosition, level.getGameTime());
         }
+        else
+        {
+            result = FieldCreationResult.NotEnoughEnergy;
+        }
         
-        return created;
+        return result;
     }
     
-    protected boolean createField(BlockPos blockPos)
+    protected FieldCreationResult createField(BlockPos blockPos)
     {
-        boolean created = createFieldWithoutInitialization(blockPos, false);
-        if(created)
+        var result = createFieldWithoutInitialization(blockPos, false);
+        if(result == FieldCreationResult.Created)
             initializeField(blockPos);
-        return created;
+        return result;
     }
     
     protected void initializeField(BlockPos blockPos)
@@ -426,37 +446,28 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     
     protected boolean shouldTryToCreateField(BlockPos fieldPosition)
     {
-        var lastAttempt = lastFailedAttemptsToCreateField.get(fieldPosition);
+        return true;
+        /*var lastAttempt = lastFailedAttemptsToCreateField.get(fieldPosition);
     
         if(lastAttempt == null)
             return true;
         else
-            return WorldChunkChanges.get((ServerLevel)level).isChunkUpdatedNotBefore(new ChunkPos(fieldPosition), lastAttempt);
+            return WorldChunkChanges.get((ServerLevel)level).isChunkUpdatedNotBefore(new ChunkPos(fieldPosition), lastAttempt);*/
+    }
+    
+    @Override
+    public void queueFieldForCreatingIfInShape(BlockPos blockPos)
+    {
+        var state = fields.getState(blockPos);
+        if(state == FieldSet.FieldState.NotCreatedTwice)
+            fields.setState(blockPos, FieldSet.FieldState.NoCreatedTwiceTestingForCreation);
     }
     
     protected void createFieldBlocks(int count)
     {
-        boolean tested = false;
         var iterator = fields.iterator(FieldSet.FieldState.NotCreated);
         if(iterator.hasNext() == false)
-        {
-            tested = true;
             iterator = fields.iterator(FieldSet.FieldState.NoCreatedTwiceTestingForCreation);
-            if(iterator.hasNext() == false)
-            {
-                iterator = fields.iterator(FieldSet.FieldState.NotCreatedTwice);
-                while(iterator.hasNext())
-                {
-                    var blockPos = iterator.next();
-        
-                    if(shouldTryToCreateField(blockPos))
-                        iterator.setState(FieldSet.FieldState.NoCreatedTwiceTestingForCreation);
-                }
-                
-                iterator = fields.iterator(FieldSet.FieldState.NoCreatedTwiceTestingForCreation);
-                
-            }
-        }
         
         HashSet<BlockPos> toInitialize = new HashSet<>();
         
@@ -464,12 +475,16 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         {
             var blockPos = iterator.next();
     
-            boolean created = createFieldWithoutInitialization(blockPos, tested);
+            var creationResult = createFieldWithoutInitialization(blockPos, false);
     
             count--;
-            if(created)
+            if(creationResult == FieldCreationResult.Created)
             {
                 toInitialize.add(blockPos);
+            }
+            else if(creationResult == FieldCreationResult.NotEnoughEnergy)
+            {
+                iterator.setState(FieldSet.FieldState.NoCreatedTwiceTestingForCreation);
             }
             else
             {

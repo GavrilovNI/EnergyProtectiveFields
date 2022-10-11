@@ -195,6 +195,18 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         }
     }
     
+    @Override
+    public void queueFieldForCreatingIfInShape(BlockPos blockPos)
+    {
+        for(var projector : fieldProjectors)
+        {
+            if(projector == this)
+                continue;
+            projector.queueFieldForCreatingIfInShape(blockPos);
+        }
+        super.queueFieldForCreatingIfInShape(blockPos);
+    }
+    
     protected void updateShape()
     {
         buildShapeCancellationToken.setCancelled();
