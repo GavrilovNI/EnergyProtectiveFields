@@ -40,6 +40,7 @@ import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -484,9 +485,26 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
         }
     }
     
+    private void debugTickTime(ServerLevel level, BlockPos blockPos, BlockState blockStat)
+    {
+        var duration = performanceTester.startOrRestartSilence("tick");
+        
+        boolean always = false;
+        
+        if(duration != null &&
+                (always ||
+                performanceTester.has("Shape Building") ||
+                performanceTester.has("Remove NotInShape Fields") ||
+                performanceTester.has("Distributing Fields")))
+            EnergyProtectiveFields.LOGGER.debug("controller time: " + performanceTester.durationToString(duration));
+            
+    }
+    
     @Override
     public void serverTick(ServerLevel level, BlockPos blockPos, BlockState blockState)
     {
+        debugTickTime(level, blockPos, blockState);
+        
         itemStackHandler.findChanges();
         
         if(inventoryChanged)
