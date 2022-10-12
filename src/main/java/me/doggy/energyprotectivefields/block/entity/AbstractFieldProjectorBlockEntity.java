@@ -3,6 +3,7 @@ package me.doggy.energyprotectivefields.block.entity;
 import me.doggy.energyprotectivefields.IDestroyingHandler;
 import me.doggy.energyprotectivefields.IServerTickable;
 import me.doggy.energyprotectivefields.api.FieldSet;
+import me.doggy.energyprotectivefields.api.IFieldsContainer;
 import me.doggy.energyprotectivefields.api.ISwitchingHandler;
 import me.doggy.energyprotectivefields.api.IFieldProjector;
 import me.doggy.energyprotectivefields.api.capability.energy.BetterEnergyStorage;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEntity implements IFieldProjector, ISwitchingHandler, IDestroyingHandler, IServerTickable
 {
@@ -36,6 +38,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     }
     
     protected final FieldSet fields = new FieldSet();
+    protected final IFieldsContainer fieldsContainer;
     protected final HashSet<BlockPos> fieldsToDestroy = new HashSet<>();
     protected final HashMap<BlockPos, Integer> cashedEnergyToBuild = new HashMap<>();
     
@@ -46,9 +49,154 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     
     protected int totalEnergyNeededToSupport = 0;
     
+    protected class FieldsContainer implements IFieldsContainer
+    {
+        private void removeFieldInternal(BlockPos fieldPosition)
+        {
+            var state = fields.getState(fieldPosition);
+            if(state == FieldSet.FieldState.Created)
+            {
+                fieldsToDestroy.add(fieldPosition);
+                fields.setState(fieldPosition, FieldSet.FieldState.RemovedFromShape);
+            }
+            else if(state != FieldSet.FieldState.Unknown)
+            {
+                stopCountingFieldForChunkLoading(fieldPosition);
+                fields.remove(fieldPosition);
+            }
+            cashedEnergyToBuild.remove(fieldPosition);
+            lastFailedAttemptsToCreateField.remove(fieldPosition);
+        }
+    
+        private void removeFieldInternal(FieldSet.Iterator iterator)
+        {
+            var state = iterator.getCurrentState();
+            var fieldPosition = iterator.getCurrentBlockPos();
+            if(state == FieldSet.FieldState.Created)
+            {
+                fieldsToDestroy.add(fieldPosition);
+                iterator.setState(FieldSet.FieldState.RemovedFromShape);
+            }
+            else
+            {
+                stopCountingFieldForChunkLoading(fieldPosition);
+                iterator.remove();
+            }
+            cashedEnergyToBuild.remove(fieldPosition);
+            lastFailedAttemptsToCreateField.remove(fieldPosition);
+        }
+        
+        @Override
+        public void add(BlockPos blockPos)
+        {
+            if(isImpossibleToBuildIn(blockPos))
+                return;
+    
+            var state = fields.getState(blockPos);
+            if(state == FieldSet.FieldState.RemovedFromShape)
+            {
+                fieldsToDestroy.remove(blockPos);
+                fields.setState(blockPos, FieldSet.FieldState.Created);
+            }
+            else if(state == FieldSet.FieldState.Unknown)
+            {
+                fields.setState(blockPos, FieldSet.FieldState.NotCreated);
+                loadCreatedFieldFromWorld(blockPos);
+        
+                countFieldForChunkLoading(blockPos);
+            }
+        }
+    
+        @Override
+        public void remove(BlockPos blockPos)
+        {
+            removeFieldInternal(blockPos);
+        }
+    
+        @Override
+        public void clear()
+        {
+            fieldsToDestroy.addAll(fields.getFields(FieldSet.FieldState.Created));
+            fields.changeState(FieldSet.FieldState.Created, FieldSet.FieldState.RemovedFromShape);
+    
+            var toClean = EnumSet.allOf(FieldSet.FieldState.class);
+            toClean.remove(FieldSet.FieldState.RemovedFromShape);
+            fields.clear(toClean);
+    
+            fieldsByChunkCounter.clear();
+            fieldsToDestroy.forEach(blockPos -> countFieldForChunkLoading(blockPos));
+    
+            cashedEnergyToBuild.clear();
+            lastFailedAttemptsToCreateField.clear();
+        }
+    
+        @Override
+        public void addAll(Collection<BlockPos> positions)
+        {
+            var removedFromShape = positions.stream().filter(blockPos -> fields.getState(blockPos) == FieldSet.FieldState.RemovedFromShape).collect(Collectors.toSet());
+            var wereNotInShape = positions.stream().filter(blockPos -> fields.getState(blockPos) == FieldSet.FieldState.Unknown).collect(Collectors.toSet());
+    
+            fieldsToDestroy.removeAll(removedFromShape);
+            fields.setAll(removedFromShape, FieldSet.FieldState.Created);
+    
+            fields.setAll(wereNotInShape, FieldSet.FieldState.NotCreated);
+    
+            for(var blockPos : wereNotInShape)
+            {
+                loadCreatedFieldFromWorld(blockPos);
+                countFieldForChunkLoading(blockPos);
+            }
+        }
+    
+        @Override
+        public void removeAll(Collection<BlockPos> positions)
+        {
+            var created = positions.stream().filter(blockPos -> fields.getState(blockPos) == FieldSet.FieldState.Created).collect(Collectors.toSet());
+            var others = positions.stream().filter(blockPos -> {
+                var state = fields.getState(blockPos);
+                return state != FieldSet.FieldState.Created && state != FieldSet.FieldState.Unknown;
+            }).collect(Collectors.toSet());
+    
+            fieldsToDestroy.addAll(created);
+            fields.setAll(created, FieldSet.FieldState.RemovedFromShape);
+    
+            fields.removeAll(others);
+            for(var fieldPosition : others)
+                stopCountingFieldForChunkLoading(fieldPosition);
+    
+            cashedEnergyToBuild.keySet().removeAll(positions);
+            lastFailedAttemptsToCreateField.keySet().removeAll(positions);
+        }
+    
+        @Override
+        public void retainAll(Collection<BlockPos> positions)
+        {
+            removeIf(blockPos -> positions.contains(blockPos) == false);
+        }
+    
+        @Override
+        public void removeIf(Predicate<BlockPos> predicate)
+        {
+            var iterator = fields.iteratorExcept(FieldSet.FieldState.RemovedFromShape);
+            while(iterator.hasNext())
+            {
+                var blockPos = iterator.next();
+                if(predicate.test(blockPos))
+                    removeFieldInternal(iterator);
+            }
+        }
+    };
+    
     public AbstractFieldProjectorBlockEntity(BlockEntityType<?> pType, BlockPos pWorldPosition, BlockState pBlockState, BetterEnergyStorage defaultEnergyStorage)
     {
         super(pType, pWorldPosition, pBlockState, defaultEnergyStorage);
+        this.fieldsContainer = new FieldsContainer();
+    }
+    
+    protected AbstractFieldProjectorBlockEntity(BlockEntityType<?> pType, BlockPos pWorldPosition, BlockState pBlockState, BetterEnergyStorage defaultEnergyStorage, IFieldsContainer fieldsContainer)
+    {
+        super(pType, pWorldPosition, pBlockState, defaultEnergyStorage);
+        this.fieldsContainer = fieldsContainer;
     }
     
     public boolean hasCamouflage()
@@ -193,6 +341,7 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
         
         lastFailedAttemptsToCreateField.remove(fieldPosition);
     }
+    
     public void onFieldCreated(FieldBlockEntity fieldBlockEntity)
     {
         if(level.isClientSide())
@@ -261,61 +410,17 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     }
     
     @Override
-    public void clearFields()
-    {
-        if(level.isClientSide())
-            return;
-        fieldsToDestroy.addAll(fields.getFields(FieldSet.FieldState.Created));
-        fields.changeState(FieldSet.FieldState.Created, FieldSet.FieldState.RemovedFromShape);
-        
-        var toClean = EnumSet.allOf(FieldSet.FieldState.class);
-        toClean.remove(FieldSet.FieldState.RemovedFromShape);
-        fields.clear(toClean);
-        
-        fieldsByChunkCounter.clear();
-        fieldsToDestroy.forEach(this::countFieldForChunkLoading);
-        
-        cashedEnergyToBuild.clear();
-        lastFailedAttemptsToCreateField.clear();
-    }
-    
-    public void removeFields(Collection<BlockPos> positions)
-    {
-        if(level.isClientSide())
-            return;
-        for(var blockPos : positions)
-            removeFieldInternal(blockPos);
-    }
-    
-    public void retainFields(Collection<BlockPos> positions)
-    {
-        if(level.isClientSide())
-            return;
-        var iterator = fields.iteratorExcept(FieldSet.FieldState.RemovedFromShape);
-        while(iterator.hasNext())
-        {
-            var blockPos = iterator.next();
-            if(positions.contains(blockPos) == false)
-                removeFieldInternal(iterator);
-        }
-    }
-    
-    @Override
     public Set<BlockPos> getAllFieldsInShape()
     {
         return fields.getAllExcept(FieldSet.FieldState.RemovedFromShape);
     }
     
     @Override
-    public void removeFieldsIf(Predicate<BlockPos> predicate)
+    public IFieldsContainer getFields()
     {
-        var iterator = fields.iteratorExcept(FieldSet.FieldState.RemovedFromShape);
-        while(iterator.hasNext())
-        {
-            var blockPos = iterator.next();
-            if(predicate.test(blockPos))
-                removeFieldInternal(iterator);
-        }
+        if(level.isClientSide())
+            return IFieldsContainer.EMPTY;
+        return fieldsContainer;
     }
     
     protected void loadCreatedFieldFromWorld(FieldBlockEntity fieldBlock)
@@ -353,72 +458,6 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
             loadCreatedFieldFromWorld(fieldBlock);
     }
     
-    @Override
-    public void addField(BlockPos blockPos)
-    {
-        if(level.isClientSide())
-            return;
-        if(isImpossibleToBuildIn(blockPos))
-            return;
-        
-        var state = fields.getState(blockPos);
-        if(state == FieldSet.FieldState.RemovedFromShape)
-        {
-            fieldsToDestroy.remove(blockPos);
-            fields.setState(blockPos, FieldSet.FieldState.Created);
-        }
-        else if(state == FieldSet.FieldState.Unknown)
-        {
-            fields.setState(blockPos, FieldSet.FieldState.NotCreated);
-            loadCreatedFieldFromWorld(blockPos);
-            
-            countFieldForChunkLoading(blockPos);
-        }
-    }
-    
-    private void removeFieldInternal(BlockPos fieldPosition)
-    {
-        var state = fields.getState(fieldPosition);
-        if(state == FieldSet.FieldState.Created)
-        {
-            fieldsToDestroy.add(fieldPosition);
-            fields.setState(fieldPosition, FieldSet.FieldState.RemovedFromShape);
-        }
-        else if(state != FieldSet.FieldState.Unknown)
-        {
-            stopCountingFieldForChunkLoading(fieldPosition);
-            fields.remove(fieldPosition);
-        }
-        cashedEnergyToBuild.remove(fieldPosition);
-        lastFailedAttemptsToCreateField.remove(fieldPosition);
-    }
-    
-    private void removeFieldInternal(FieldSet.Iterator iterator)
-    {
-        var state = iterator.getCurrentState();
-        var fieldPosition = iterator.getCurrentBlockPos();
-        if(state == FieldSet.FieldState.Created)
-        {
-            fieldsToDestroy.add(fieldPosition);
-            iterator.setState(FieldSet.FieldState.RemovedFromShape);
-        }
-        else
-        {
-            stopCountingFieldForChunkLoading(fieldPosition);
-            iterator.remove();
-        }
-        cashedEnergyToBuild.remove(fieldPosition);
-        lastFailedAttemptsToCreateField.remove(fieldPosition);
-    }
-    
-    @Override
-    public void removeField(BlockPos blockPos)
-    {
-        if(level.isClientSide())
-            return;
-        removeFieldInternal(blockPos);
-    }
-    
     protected void destroyRequestedFields(int count)
     {
         for(var blockPos : fieldsToDestroy.stream().limit(count).toList())
@@ -447,12 +486,6 @@ public abstract class AbstractFieldProjectorBlockEntity extends EnergizedBlockEn
     protected boolean shouldTryToCreateField(BlockPos fieldPosition)
     {
         return true;
-        /*var lastAttempt = lastFailedAttemptsToCreateField.get(fieldPosition);
-    
-        if(lastAttempt == null)
-            return true;
-        else
-            return WorldChunkChanges.get((ServerLevel)level).isChunkUpdatedNotBefore(new ChunkPos(fieldPosition), lastAttempt);*/
     }
     
     @Override

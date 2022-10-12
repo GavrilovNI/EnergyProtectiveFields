@@ -16,22 +16,16 @@ public interface IFieldProjector extends IFieldStateListener
     int getEnergyToBuildField(BlockPos blockPos);
     int getEnergyToSupportField(BlockPos blockPos);
     
-    void clearFields();
-    void queueFieldForCreatingIfInShape(BlockPos blockPos);
-    void addField(BlockPos blockPos);
-    void removeField(BlockPos blockPos);
+    IFieldsContainer getFields();
+    Set<BlockPos> getAllFieldsInShape();
     
-    void removeFields(Collection<BlockPos> positions);
-    void retainFields(Collection<BlockPos> positions);
-    void removeFieldsIf(Predicate<BlockPos> predicate);
+    void queueFieldForCreatingIfInShape(BlockPos blockPos);
     
     void onControllerEnabled();
     void onControllerDisabled();
     
     Level getLevel();
     BlockPos getPosition();
-    
-    Set<BlockPos> getAllFieldsInShape();
     
     void setCamouflage(BlockState blockState);
 }

@@ -35,7 +35,7 @@ public class FieldsDistributor
     public void distributeField(BlockPos fieldPosition)
     {
         IFieldProjector projector = projectorChooser.getBestProjector(projectorsProvider.getProjectors(), fieldPosition);
-        projector.addField(fieldPosition);
+        projector.getFields().add(fieldPosition);
     }
     
     public void distributeFields(Set<BlockPos> fieldPositions)
@@ -56,11 +56,11 @@ public class FieldsDistributor
     
     public void transferField(BlockPos fieldPosition, IFieldProjector from, IFieldProjector to)
     {
-        from.removeField(fieldPosition);
+        from.getFields().remove(fieldPosition);
         var fieldBlock = fieldBlockProvider.getFieldBlock(fieldPosition);
         if(fieldBlock != null && fieldBlock.isMyProjector(from))
             fieldBlock.setProjectorPosition(to.getPosition());
-        to.addField(fieldPosition);
+        to.getFields().add(fieldPosition);
     }
     
     public void distributeFieldsFrom(IFieldProjector fieldProjector)
@@ -72,12 +72,12 @@ public class FieldsDistributor
             IFieldProjector newProjector = projectorChooser.getBestProjector(projectors, fieldPosition);
             transferField(fieldPosition, fieldProjector, newProjector);
         }
-        fieldProjector.clearFields();
+        fieldProjector.getFields().clear();
     }
     
     public void redistributeFieldsForNew(IFieldProjector fieldProjector)
     {
-        fieldProjector.clearFields();
+        fieldProjector.getFields().clear();
         for(var otherProjector : projectorsProvider.getProjectors())
         {
             if(otherProjector == fieldProjector)

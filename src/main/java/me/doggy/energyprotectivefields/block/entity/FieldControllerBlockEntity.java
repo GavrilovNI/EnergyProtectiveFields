@@ -40,7 +40,6 @@ import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -164,7 +163,7 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     protected void removeAllFieldBlocksWhichNotInShapeFromProjectors()
     {
         for(var projector : fieldProjectors)
-            projector.removeFieldsIf(blockPos -> shapePositions.contains(blockPos) == false);
+            projector.getFields().removeIf(blockPos -> shapePositions.contains(blockPos) == false);
     }
     
     private IFieldProjector getFieldProjectorIfMine(FieldBlockEntity fieldBlock)

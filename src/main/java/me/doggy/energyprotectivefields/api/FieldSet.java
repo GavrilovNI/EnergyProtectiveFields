@@ -190,10 +190,16 @@ public class FieldSet
     
     public FieldState setState(BlockPos blockPos, FieldState fieldState)
     {
-        var currentState = remove(blockPos);
+        if(fieldState == FieldState.Unknown)
+            return remove(blockPos);
         
-        if(fieldState != FieldState.Unknown)
-            fields.get(fieldState).add(blockPos);
+        var currentState = getState(blockPos);
+        
+        if(currentState != fieldState)
+        {
+            remove(blockPos);
+            fields.get(fieldState).add(blockPos.immutable());
+        }
         
         return currentState;
     }
@@ -206,6 +212,12 @@ public class FieldSet
         return currentState;
     }
     
+    public void removeAll(Collection<BlockPos> blockPoses)
+    {
+        for(var poses : fields.values())
+            poses.removeAll(blockPoses);
+    }
+    
     public void retainAll(Collection<BlockPos> blockPoses)
     {
         for(var poses : fields.values())
@@ -214,8 +226,23 @@ public class FieldSet
     
     public void setAll(Set<BlockPos> blockPoses, FieldState fieldState)
     {
-        for(var blockPos : blockPoses)
-            setState(blockPos, fieldState);
+        if(fieldState == FieldState.Unknown)
+        {
+            removeAll(blockPoses);
+            return;
+        }
+        for(var entry : fields.entrySet())
+        {
+            if(entry.getKey() == fieldState)
+            {
+                var immutablePositions = blockPoses.stream().map(blockPos -> blockPos.immutable()).collect(Collectors.toSet());
+                entry.getValue().addAll(immutablePositions);
+            }
+            else
+            {
+                entry.getValue().removeAll(blockPoses);
+            }
+        }
     }
     
     public boolean contains(BlockPos blockPos)
@@ -302,7 +329,7 @@ public class FieldSet
         
         var result = new HashSet<BlockPos>();
         for(var fieldState : realStates)
-            result.addAll((Collection<? extends BlockPos>)fields.get(fieldState).clone());
+            result.addAll(fields.get(fieldState));
         return result;
     }
     
