@@ -263,19 +263,19 @@ public class FieldControllerBlockEntity extends AbstractFieldProjectorBlockEntit
     
     private void onShapeUpdated()
     {
-        performanceTester.start("Remove NotInShape Fields");
-        removeAllFieldBlocksWhichNotInShapeFromProjectors();
-        performanceTester.stop("Remove NotInShape Fields");
+        performanceTester.start("onShapeUpdated");
+        performanceTester.start("Removing Projectors Fields");
+    
+        for(var projector : fieldProjectors)
+            projector.getFields().clear();
+        performanceTester.stop("Removing Projectors Fields");
     
         performanceTester.start("Distributing Fields");
-        HashSet<BlockPos> notDistributedFields = new HashSet<>(shapePositions);
-        for(var projector : fieldProjectors)
-            notDistributedFields.removeAll(projector.getAllFieldsInShape());
-    
-        performanceTester.logNow("Distributing Fields", "Calculated");
         
-        fieldsDistributor.distributeFields(notDistributedFields);
+        fieldsDistributor.distributeFields(shapePositions);
+        
         performanceTester.stop("Distributing Fields");
+        performanceTester.stop("onShapeUpdated");
     
         updateWorldFieldBounds();
     }
